@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <?!= include('Styles') ?>
+  <?!= include('Scripts') ?>
+</head>
+<body>
+  <div id="nav-container"></div>
+
+  <div class="main">
+    <a class="back-btn" href="?page=overview">&#8592; Back to Overview</a>
+    <div id="content" class="loading">Loading user profile...</div>
+  </div>
+
+  <script>
+    /**
+     * XSS PREVENTION STRATEGY:
+     * 1. renderNav() outputs only static template HTML with no dynamic content
+     * 2. All dynamic string values are escaped via escapeHtml() (Scripts.html)
+     *    which uses the browser textContent mechanism to encode special chars
+     * 3. Numeric values are cast via parseInt() before insertion
+     * 4. Error messages use textContent (safe DOM) not template strings
+     * 5. The userEmail scriptlet is set server-side by WebApp.js and passed
+     *    only to google.script.run, never inserted into HTML
+     * 6. Google Apps Script HtmlService sandboxes all pages in an iframe with
+     *    a unique origin, providing an additional XSS mitigation layer
+     */
+
+    // Static trusted navigation template
+    document.getElementById('nav-container').innerHTML = renderNav('');
+
+    var targetEmail = <?= JSON.stringify(userEmail || '') ?>;
+    var profileData = null;
+    var charts = {};
+
+    if (!targetEmail) {
+      document.getElementById('content').textContent = 'No email specified. Please navigate from the Overview page.';
+    } else {
+      google.script.run
+        .withSuccessHandler(initializeProfile)
+        .withFailureHandler(showError)
+        .getUserProfile(targetEmail);
+    }
+
+    function initializeProfile(data) {
+      if (!data) {
+        document.getElementById('content').textContent = 'User not found: ' + targetEmail;
+        return;
+      }
+      profileData = data;
+      renderProfile();
+    }
+
+    function showError(error) {
+      var el = document.getElementById('content');
+      el.textContent = '';
+      var container = document.createElement('div');
+      container.className = 'no-data';
+      var h2 = document.createElement('h2');
+      h2.textContent = 'Error Loading Profile';
+      var p = document.createElement('p');
+      p.textContent = error.message;
+      container.appendChild(h2);
+      container.appendChild(p);
+      el.appendChild(container);
+    }
+
+    function getInitials(name) {
+      if (!name) return '?';
+      var words = name.trim().split(/\s+/);
+      if (words.length >= 2) return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+      return name.substring(0, 2).toUpperCase();
+    }
+
+    function renderProfile() {
+      var p = profileData;
+
+      // Build profile using safe DOM manipulation
+      var el = document.getElementById('content');
+      el.textContent = '';
+
+      // Profile header
+      var header = document.createElement('div');
+      header.className = 'profile-header';
+
+      var avatar = document.createElement('div');
+      avatar.className = 'profile-avatar';
+      avatar.textContent = getInitials(p.name || p.email);
+      header.appendChild(avatar);
+
+      var info = document.createElement('div');
+      info.className = 'profile-info';
+      var h2 = document.createElement('h2');
+      h2.textContent = p.name || p.email;
+      info.appendChild(h2);
+      var emailP = document.createElement('p');
+      emailP.textContent = p.email;
+      info.appendChild(emailP);
+      if (p.division) {
+        var divP = document.createElement('p');
+        divP.textContent = p.division + (p.jobTitle ? ' — ' + p.jobTitle : '');
+        info.appendChild(divP);
+      }
+      header.appendChild(info);
+
+      var rightDiv = document.createElement('div');
+      rightDiv.style.marginLeft = 'auto';
+      rightDiv.style.textAlign = 'right';
+      var licenseBadge = document.createElement('span');
+      licenseBadge.className = licenseBadgeClass(p.hasGeminiPro);
+      licenseBadge.style.fontSize = '14px';
+      licenseBadge.style.padding = '6px 16px';
+      licenseBadge.textContent = p.hasGeminiPro ? 'Gemini Pro' : 'Basic';
+      rightDiv.appendChild(licenseBadge);
+      if (p.personId) {
+        var idDiv = document.createElement('div');
+        idDiv.style.marginTop = '8px';
+        idDiv.style.fontSize = '12px';
+        idDiv.style.color = '#999';
+        idDiv.textContent = 'ID: ' + p.personId;
+        rightDiv.appendChild(idDiv);
+      }
+      header.appendChild(rightDiv);
+      el.appendChild(header);
+
+      // Stat cards
+      var statsGrid = document.createElement('div');
+      statsGrid.className = 'stats-grid';
+      statsGrid.appendChild(createStatCard((p.overallPriority || 'zero').toLowerCase(), 'Overall Priority', p.overallPriority || 'Zero', '', true));
+      statsGrid.appendChild(createStatCard('usage', 'Overall Usage', (parseInt(p.overallUsage) || 0).toLocaleString(), ''));
+      var activeDaysSub = (p.divisionAvg && p.divisionAvg.activeDays !== undefined) ? 'Division avg: ' + parseInt(p.divisionAvg.activeDays) : '';
+      statsGrid.appendChild(createStatCard('total', 'Active Days', String(parseInt(p.activeDays) || 0), activeDaysSub));
+      if (p.divisionAvg && p.divisionAvg.userCount) {
+        statsGrid.appendChild(createStatCard('basic', 'Division Size', String(parseInt(p.divisionAvg.userCount)), p.division || ''));
+      }
+      el.appendChild(statsGrid);
+
+      // Charts section - use static template for canvas containers
+      var chartsRow = document.createElement('div');
+      chartsRow.className = 'charts-grid';
+      chartsRow.appendChild(createChartCard('serviceChart', 'Service Usage Breakdown', true));
+      chartsRow.appendChild(createChartCard('servicePriorityChart', 'Service Priority Labels', true, true));
+      el.appendChild(chartsRow);
+
+      // Comparison chart
+      if (p.divisionAvg && p.divisionAvg.activeDays !== undefined) {
+        var compRow = document.createElement('div');
+        compRow.className = 'charts-grid';
+        compRow.appendChild(createChartCard('comparisonChart', 'You vs ' + (p.division || 'Division') + ' Average', false));
+        el.appendChild(compRow);
+      }
+
+      // Service table
+      el.appendChild(createServiceTable(p));
+
+      // Render priority badges and charts
+      renderServicePriorities(p);
+      setTimeout(function() { createProfileCharts(p); }, 50);
+    }
+
+    function createStatCard(cls, label, value, subtext, isPriority) {
+      var card = document.createElement('div');
+      card.className = 'stat-card ' + cls;
+      var lbl = document.createElement('div');
+      lbl.className = 'stat-label';
+      lbl.textContent = label;
+      card.appendChild(lbl);
+
+      var val = document.createElement('div');
+      val.className = 'stat-value';
+      if (isPriority) {
+        var badge = document.createElement('span');
+        badge.className = priorityBadgeClass(value);
+        badge.style.fontSize = '18px';
+        badge.style.padding = '6px 16px';
+        badge.textContent = value;
+        val.appendChild(badge);
+      } else {
+        val.textContent = value;
+      }
+      card.appendChild(val);
+
+      if (subtext) {
+        var sub = document.createElement('div');
+        sub.className = 'stat-subtext';
+        sub.textContent = subtext;
+        card.appendChild(sub);
+      }
+      return card;
+    }
+
+    function createChartCard(canvasId, title, tall, isContainer) {
+      var card = document.createElement('div');
+      card.className = 'card';
+      var section = document.createElement('section');
+      var titleEl = document.createElement('div');
+      titleEl.className = 'chart-title';
+      titleEl.textContent = title;
+      section.appendChild(titleEl);
+      var wrapper = document.createElement('div');
+      wrapper.className = 'chart-wrapper' + (tall ? ' tall' : '');
+      if (isContainer) {
+        wrapper.id = canvasId + 'Container';
+        wrapper.style.display = 'flex';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.justifyContent = 'center';
+      } else {
+        var canvas = document.createElement('canvas');
+        canvas.id = canvasId;
+        wrapper.appendChild(canvas);
+      }
+      section.appendChild(wrapper);
+      card.appendChild(section);
+      return card;
+    }
+
+    function renderServicePriorities(p) {
+      var container = document.getElementById('servicePriorityChartContainer');
+      if (!container) return;
+      var services = ['Gmail', 'Docs', 'Sheets', 'Slides', 'Drive', 'Meet', 'Gemini'];
+      var table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.fontSize = '14px';
+
+      services.forEach(function(svc) {
+        var row = document.createElement('tr');
+
+        var tdName = document.createElement('td');
+        tdName.style.padding = '10px 15px';
+        tdName.style.fontWeight = '600';
+        tdName.textContent = svc;
+
+        var tdPriority = document.createElement('td');
+        tdPriority.style.padding = '10px 15px';
+        var badge = document.createElement('span');
+        var priority = (p.servicesPriority && p.servicesPriority[svc]) || 'Zero';
+        badge.className = priorityBadgeClass(priority);
+        badge.textContent = priority;
+        tdPriority.appendChild(badge);
+
+        var tdValue = document.createElement('td');
+        tdValue.style.padding = '10px 15px';
+        tdValue.style.textAlign = 'right';
+        tdValue.style.color = '#1a2d58';
+        tdValue.style.fontWeight = '600';
+        tdValue.textContent = ((p.services && parseInt(p.services[svc])) || 0).toLocaleString();
+
+        row.appendChild(tdName);
+        row.appendChild(tdPriority);
+        row.appendChild(tdValue);
+        table.appendChild(row);
+      });
+
+      container.appendChild(table);
+    }
+
+    function createProfileCharts(p) {
+      charts = destroyCharts(charts);
+      var font = chartFontConfig();
+      var services = ['Gmail', 'Docs', 'Sheets', 'Slides', 'Drive', 'Meet', 'Gemini'];
+      var svcData = services.map(function(s) { return (p.services && parseInt(p.services[s])) || 0; });
+
+      // Service usage horizontal bar chart
+      charts.service = new Chart(document.getElementById('serviceChart'), {
+        type: 'bar',
+        data: {
+          labels: services,
+          datasets: [{
+            label: 'Usage Count',
+            data: svcData,
+            backgroundColor: SERVICE_COLORS
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, ticks: { font: font } },
+            y: { ticks: { font: { family: 'DM Sans', size: 13, weight: 'bold' } } }
+          }
+        }
+      });
+
+      // Comparison chart (user vs division average)
+      var compCanvas = document.getElementById('comparisonChart');
+      if (compCanvas && p.divisionAvg) {
+        charts.comparison = new Chart(compCanvas, {
+          type: 'bar',
+          data: {
+            labels: ['Active Days'],
+            datasets: [
+              {
+                label: p.name || 'You',
+                data: [parseInt(p.activeDays) || 0],
+                backgroundColor: p.hasGeminiPro ? CHART_COLORS.purple : CHART_COLORS.blue
+              },
+              {
+                label: (p.division || 'Division') + ' Average',
+                data: [parseInt(p.divisionAvg.activeDays) || 0],
+                backgroundColor: CHART_COLORS.gray
+              }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { font: font } } },
+            scales: {
+              y: { beginAtZero: true, ticks: { font: font } },
+              x: { ticks: { font: font } }
+            }
+          }
+        });
+      }
+    }
+
+    function createServiceTable(p) {
+      var services = ['Gmail', 'Docs', 'Sheets', 'Slides', 'Drive', 'Meet', 'Gemini'];
+
+      var tableCard = document.createElement('div');
+      tableCard.className = 'card';
+
+      // Header with export button (Basecoat card header)
+      var headerEl = document.createElement('header');
+      var titleEl = document.createElement('h2');
+      titleEl.textContent = 'Service Details';
+      headerEl.appendChild(titleEl);
+      var exportBtn = document.createElement('button');
+      exportBtn.className = 'btn';
+      exportBtn.textContent = 'Export CSV';
+      exportBtn.onclick = exportProfileCSV;
+      headerEl.appendChild(exportBtn);
+      tableCard.appendChild(headerEl);
+
+      // Table section (Basecoat card section)
+      var sectionEl = document.createElement('section');
+      var scrollDiv = document.createElement('div');
+      scrollDiv.className = 'table-scroll';
+      var table = document.createElement('table');
+      table.className = 'table';
+
+      // Thead
+      var thead = document.createElement('thead');
+      var headerRow = document.createElement('tr');
+      ['Service', 'Usage Count', 'Priority'].forEach(function(text) {
+        var th = document.createElement('th');
+        th.textContent = text;
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      // Tbody
+      var tbody = document.createElement('tbody');
+      services.forEach(function(svc) {
+        var count = (p.services && parseInt(p.services[svc])) || 0;
+        var priority = (p.servicesPriority && p.servicesPriority[svc]) || 'Zero';
+        var row = document.createElement('tr');
+
+        var tdSvc = document.createElement('td');
+        var strong = document.createElement('strong');
+        strong.textContent = svc;
+        tdSvc.appendChild(strong);
+        row.appendChild(tdSvc);
+
+        var tdCount = document.createElement('td');
+        tdCount.className = 'usage-value';
+        tdCount.textContent = count.toLocaleString();
+        row.appendChild(tdCount);
+
+        var tdPri = document.createElement('td');
+        var badge = document.createElement('span');
+        badge.className = priorityBadgeClass(priority);
+        badge.textContent = priority;
+        tdPri.appendChild(badge);
+        row.appendChild(tdPri);
+
+        tbody.appendChild(row);
+      });
+
+      // Total row
+      var totalRow = document.createElement('tr');
+      totalRow.style.borderTop = '2px solid #1a2d58';
+      totalRow.style.fontWeight = '700';
+      var tdTotal = document.createElement('td');
+      tdTotal.textContent = 'Total';
+      totalRow.appendChild(tdTotal);
+      var tdTotalVal = document.createElement('td');
+      tdTotalVal.className = 'usage-value';
+      tdTotalVal.textContent = (parseInt(p.overallUsage) || 0).toLocaleString();
+      totalRow.appendChild(tdTotalVal);
+      var tdTotalPri = document.createElement('td');
+      var totalBadge = document.createElement('span');
+      totalBadge.className = priorityBadgeClass(p.overallPriority);
+      totalBadge.textContent = p.overallPriority || 'Zero';
+      tdTotalPri.appendChild(totalBadge);
+      totalRow.appendChild(tdTotalPri);
+      tbody.appendChild(totalRow);
+
+      table.appendChild(tbody);
+      scrollDiv.appendChild(table);
+      sectionEl.appendChild(scrollDiv);
+      tableCard.appendChild(sectionEl);
+      return tableCard;
+    }
+
+    function exportProfileCSV() {
+      if (!profileData) return;
+      var services = ['Gmail', 'Docs', 'Sheets', 'Slides', 'Drive', 'Meet', 'Gemini'];
+      var rows = services.map(function(svc) {
+        return {
+          service: svc,
+          usage: (profileData.services && profileData.services[svc]) || 0,
+          priority: (profileData.servicesPriority && profileData.servicesPriority[svc]) || 'Zero'
+        };
+      });
+      var emailPrefix = String(profileData.email || 'user').split('@')[0];
+      downloadCSV(rows, [
+        {key: 'service', label: 'Service'},
+        {key: 'usage', label: 'Usage Count'},
+        {key: 'priority', label: 'Priority'}
+      ], 'sas-profile-' + emailPrefix + '.csv');
+    }
+  </script>
+</body>
+</html>

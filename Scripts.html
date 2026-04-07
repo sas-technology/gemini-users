@@ -1,0 +1,128 @@
+<script>
+  // SAS Brand Colors for Chart.js
+  const CHART_COLORS = {
+    blue: '#1a2d58',
+    red: '#a0192a',
+    yellow: '#fabc00',
+    elementary: '#228ec2',
+    orange: '#ee7103',
+    coral: '#e6413d',
+    purple: '#c42384',
+    teal: '#1284ad',
+    green: '#009754',
+    cyan: '#2db7be',
+    gold: '#fdc013',
+    gray: '#97999c'
+  };
+
+  // Division color mapping
+  const DIVISION_COLORS = {
+    'Elementary School': '#228ec2',
+    'Middle School': '#a0192a',
+    'High School': '#1a2d58',
+    'Admin': '#6d6f72'
+  };
+
+  // Service chart colors (ordered)
+  const SERVICE_COLORS = ['#ee7103', '#1a2d58', '#009754', '#e6413d', '#1284ad', '#c42384', '#fdc013'];
+
+  /**
+   * Navigate to another page in the web app.
+   * @param {string} page - The page name
+   * @param {object} params - Additional URL parameters
+   */
+  function goToPage(page, params) {
+    let url = '?page=' + encodeURIComponent(page);
+    if (params) {
+      Object.keys(params).forEach(function(key) {
+        url += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+      });
+    }
+    window.top.location.href = url;
+  }
+
+  /**
+   * Format usage display: "Priority (count)"
+   */
+  function formatUsage(priority, value) {
+    return priority + ' (' + ((parseInt(value) || 0).toLocaleString()) + ')';
+  }
+
+  /**
+   * Returns CSS classes for a priority badge (Basecoat badge + custom variant).
+   */
+  function priorityBadgeClass(priority) {
+    return 'badge badge-' + (priority || 'zero').toLowerCase();
+  }
+
+  /**
+   * Returns CSS classes for a license badge (Basecoat badge + custom variant).
+   */
+  function licenseBadgeClass(hasGeminiPro) {
+    return 'badge ' + (hasGeminiPro ? 'badge-pro' : 'badge-basic');
+  }
+
+  /**
+   * Download data as CSV file.
+   * @param {Array} rows - Array of objects
+   * @param {Array} columns - Array of {key, label} column definitions
+   * @param {string} filename - Download filename
+   */
+  function downloadCSV(rows, columns, filename) {
+    const header = columns.map(function(c) { return '"' + c.label + '"'; }).join(',');
+    const csvRows = rows.map(function(row) {
+      return columns.map(function(c) {
+        const val = typeof c.key === 'function' ? c.key(row) : (row[c.key] || '');
+        return '"' + String(val).replace(/"/g, '""') + '"';
+      }).join(',');
+    });
+
+    const csv = header + '\n' + csvRows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename || 'export.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  /**
+   * Escapes HTML special characters to prevent XSS.
+   */
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  /**
+   * Renders the navigation bar. Call with the active page name.
+   */
+  function renderNav(activePage) {
+    return '<nav class="nav">' +
+      '<div class="nav-brand">SAS Usage Analytics</div>' +
+      '<ul class="nav-links">' +
+        '<li><a href="?page=overview" class="' + (activePage === 'overview' ? 'active' : '') + '">Overview</a></li>' +
+        '<li><a href="?page=divisions" class="' + (activePage === 'divisions' ? 'active' : '') + '">Divisions</a></li>' +
+      '</ul>' +
+      '<div class="nav-right">Singapore American School</div>' +
+    '</nav>';
+  }
+
+  /**
+   * Destroy all Chart.js instances in a charts object.
+   */
+  function destroyCharts(charts) {
+    Object.values(charts).forEach(function(chart) {
+      if (chart && chart.destroy) chart.destroy();
+    });
+    return {};
+  }
+
+  /**
+   * Default Chart.js font configuration.
+   */
+  function chartFontConfig() {
+    return { family: 'DM Sans' };
+  }
+</script>

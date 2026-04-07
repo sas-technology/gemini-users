@@ -1,0 +1,10 @@
+# Environment
+.env
+.env.local
+
+# Claude Code
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db
