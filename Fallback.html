@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAS Usage Analytics — Fallback</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Google Sans', 'Helvetica Neue', Arial, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      font-size: 14px;
+    }
+
+    /* Nav */
+    .nav {
+      background: linear-gradient(135deg, #1a2d58 0%, #a0192a 100%);
+      color: white;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .nav-brand { font-size: 17px; font-weight: 700; }
+    .nav-badge {
+      background: rgba(255,193,7,0.25);
+      border: 1px solid rgba(255,193,7,0.6);
+      color: #ffd54f;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+    .nav-right { margin-left: auto; font-size: 12px; opacity: 0.7; }
+
+    .main { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+    /* Notice banner */
+    .notice {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-left: 4px solid #fabc00;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #5d4037;
+    }
+    .notice strong { color: #3e2723; }
+
+    /* Stats grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .stat {
+      background: white;
+      border-radius: 8px;
+      padding: 18px;
+      border-left: 4px solid #1a2d58;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    }
+    .stat.pro    { border-left-color: #c42384; }
+    .stat.high   { border-left-color: #ff0000; }
+    .stat.medium { border-left-color: #ff9900; }
+    .stat.low    { border-left-color: #ffcc00; }
+    .stat.zero   { border-left-color: #28a745; }
+    .stat.untracked { border-left-color: #ff9800; }
+    .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #888; font-weight: 600; margin-bottom: 6px; }
+    .stat-val   { font-size: 28px; font-weight: 700; color: #222; }
+    .stat-sub   { font-size: 12px; color: #999; margin-top: 4px; }
+
+    /* Card */
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      border: 1px solid #e5e7eb;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .card-header h2 { font-size: 14px; font-weight: 700; color: #1a2d58; }
+    .card-body { padding: 0; }
+
+    /* Search */
+    .search-bar { padding: 12px 18px; border-bottom: 1px solid #e5e7eb; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .search-bar input, .search-bar select {
+      padding: 6px 10px;
+      border: 1px solid #d0d0d0;
+      border-radius: 5px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .search-bar input { width: 240px; }
+    .search-bar label { font-size: 12px; color: #666; font-weight: 600; }
+
+    /* Table */
+    .tbl-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead { background: #1a2d58; color: white; }
+    th { padding: 10px 14px; text-align: left; font-weight: 600; white-space: nowrap; font-size: 12px; }
+    td { padding: 9px 14px; border-bottom: 1px solid #f0f0f0; }
+    tbody tr:hover { background: #f8faff; }
+    .count { color: #888; font-size: 12px; font-weight: normal; }
+
+    /* Badges */
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .b-pro     { background: #c42384; color: white; }
+    .b-basic   { background: #97999c; color: white; }
+    .b-high    { background: #ff0000; color: white; }
+    .b-medium  { background: #ff9900; color: white; }
+    .b-low     { background: #ffcc00; color: #333; }
+    .b-zero    { background: #28a745; color: white; }
+
+    /* Division grid */
+    .div-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; padding: 18px; }
+    .div-card { padding: 16px; border-radius: 7px; border-left: 4px solid; }
+    .div-es   { border-left-color: #228ec2; background: #e8f4fb; }
+    .div-ms   { border-left-color: #a0192a; background: #faeaea; }
+    .div-hs   { border-left-color: #1a2d58; background: #eaeef5; }
+    .div-adm  { border-left-color: #6d6f72; background: #f4f4f5; }
+    .div-name { font-size: 12px; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .div-val  { font-size: 24px; font-weight: 700; color: #222; }
+    .div-sub  { font-size: 12px; color: #777; margin-top: 3px; }
+
+    /* Loading / Error */
+    .state { text-align: center; padding: 40px; color: #999; }
+    .state h3 { margin-bottom: 8px; color: #666; }
+
+    @media (max-width: 768px) {
+      .main { padding: 12px; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .search-bar input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="nav">
+    <div class="nav-brand">SAS Usage Analytics</div>
+    <div class="nav-badge">FALLBACK MODE</div>
+    <div class="nav-right">Singapore American School</div>
+  </div>
+
+  <div class="main">
+    <div class="notice">
+      <strong>Fallback view active.</strong> The primary Next.js dashboard is currently unavailable.
+      This read-only view is served directly from Google Apps Script.
+      Data refreshes on each page load.
+    </div>
+
+    <div id="statsGrid" class="stats-grid">
+      <div class="state"><h3>Loading…</h3></div>
+    </div>
+
+    <div class="card" id="divCard" style="display:none">
+      <div class="card-header"><h2>By Division</h2></div>
+      <div class="card-body">
+        <div class="div-grid" id="divGrid"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Users <span class="count" id="countLabel"></span></h2>
+        <button onclick="exportCSV()" style="padding:5px 12px;background:#1a2d58;color:white;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;">Export CSV</button>
+      </div>
+      <div class="search-bar">
+        <div>
+          <label>Search email</label><br>
+          <input type="text" id="searchBox" placeholder="Filter by email…" oninput="renderTable()">
+        </div>
+        <div>
+          <label>License</label><br>
+          <select id="licenseFilter" onchange="renderTable()">
+            <option value="">All</option>
+            <option value="pro">Pro</option>
+            <option value="basic">Basic</option>
+          </select>
+        </div>
+        <div>
+          <label>Priority</label><br>
+          <select id="priorityFilter" onchange="renderTable()">
+            <option value="">All</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+            <option value="Zero">Zero</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>Email</th><th>License</th><th>Priority</th>
+                <th>Usage</th><th>Active Days</th>
+                <th>Gmail</th><th>Docs</th><th>Sheets</th><th>Slides</th><th>Drive</th><th>Meet</th><th>Gemini</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div id="tableState" class="state"><h3>Loading data…</h3></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var allUsers = [];
+    var usageData = null;
+
+    // ── helpers ──────────────────────────────────────────────────────────────
+    function badgePriority(p) {
+      var cls = { High:'b-high', Medium:'b-medium', Low:'b-low', Zero:'b-zero' }[p] || 'b-zero';
+      return '<span class="badge ' + cls + '">' + (p || 'Zero') + '</span>';
+    }
+    function badgeLicense(pro) {
+      return '<span class="badge ' + (pro ? 'b-pro' : 'b-basic') + '">' + (pro ? 'Pro' : 'Basic') + '</span>';
+    }
+    function n(v) { return (parseInt(v) || 0).toLocaleString(); }
+
+    // ── usage data callback ───────────────────────────────────────────────────
+    function onUsage(data) {
+      usageData = data;
+      allUsers = (data && data.users) ? data.users : [];
+
+      // Stats grid
+      var total = allUsers.length;
+      var pro = allUsers.filter(function(u) { return u.hasGeminiPro; }).length;
+      var byP = { High:0, Medium:0, Low:0, Zero:0 };
+      var totalUsage = 0;
+      allUsers.forEach(function(u) {
+        byP[u.overallUsagePriority] = (byP[u.overallUsagePriority] || 0) + 1;
+        totalUsage += (parseInt(u.overallUsage) || 0);
+      });
+      var untracked = (data && data.untrackedUsers) ? data.untrackedUsers.count : 0;
+
+      document.getElementById('statsGrid').innerHTML =
+        stat('', 'Total Users', total, '') +
+        stat('pro', 'Gemini Pro', pro, Math.round(pro/total*100||0) + '% of users') +
+        stat('high',    'High Priority',   byP.High,   '') +
+        stat('medium',  'Medium Priority', byP.Medium, '') +
+        stat('low',     'Low Priority',    byP.Low,    '') +
+        stat('zero',    'Zero Priority',   byP.Zero,   '') +
+        stat('',        'Total Usage',     totalUsage.toLocaleString(), 'Avg: ' + Math.round(totalUsage/(total||1)).toLocaleString()) +
+        (untracked > 0 ? stat('untracked', 'Untracked', untracked, 'Not in any list') : '');
+
+      renderTable();
+    }
+
+    function stat(cls, label, val, sub) {
+      return '<div class="stat ' + cls + '">' +
+        '<div class="stat-label">' + label + '</div>' +
+        '<div class="stat-val">' + val + '</div>' +
+        (sub ? '<div class="stat-sub">' + sub + '</div>' : '') +
+        '</div>';
+    }
+
+    // ── division data callback ────────────────────────────────────────────────
+    function onDivisions(data) {
+      if (!data || !data.divisions) return;
+      var divs = data.divisions;
+      var clsMap = { 'Elementary School':'div-es', 'Middle School':'div-ms', 'High School':'div-hs' };
+      var html = '';
+      Object.keys(divs).sort().forEach(function(name) {
+        var d = divs[name];
+        var cls = clsMap[name] || 'div-adm';
+        var rate = d.userCount > 0 ? Math.round(d.proCount / d.userCount * 100) : 0;
+        html += '<div class="div-card ' + cls + '">' +
+          '<div class="div-name">' + name + '</div>' +
+          '<div class="div-val">' + d.userCount + '</div>' +
+          '<div class="div-sub">Pro: ' + d.proCount + ' (' + rate + '%) · Avg ' + d.avgActiveDays + ' days</div>' +
+          '</div>';
+      });
+      document.getElementById('divGrid').innerHTML = html;
+      document.getElementById('divCard').style.display = '';
+    }
+
+    // ── table render ─────────────────────────────────────────────────────────
+    function renderTable() {
+      var search   = (document.getElementById('searchBox').value || '').toLowerCase();
+      var license  = document.getElementById('licenseFilter').value;
+      var priority = document.getElementById('priorityFilter').value;
+
+      var rows = allUsers.filter(function(u) {
+        if (search && !u.email.toLowerCase().includes(search)) return false;
+        if (license === 'pro'   && !u.hasGeminiPro) return false;
+        if (license === 'basic' && u.hasGeminiPro)  return false;
+        if (priority && u.overallUsagePriority !== priority) return false;
+        return true;
+      }).sort(function(a, b) { return (b.overallUsage || 0) - (a.overallUsage || 0); });
+
+      document.getElementById('countLabel').textContent = '(' + rows.length + ' users)';
+
+      var html = '';
+      rows.forEach(function(u, i) {
+        var s = u.services || {};
+        html += '<tr>' +
+          '<td>' + (i+1) + '</td>' +
+          '<td style="font-weight:500;color:#1a2d58">' + u.email + '</td>' +
+          '<td>' + badgeLicense(u.hasGeminiPro) + '</td>' +
+          '<td>' + badgePriority(u.overallUsagePriority) + '</td>' +
+          '<td style="font-weight:600">' + n(u.overallUsage) + '</td>' +
+          '<td>' + (u.activeDays || 0) + '</td>' +
+          '<td>' + n(s.Gmail)  + '</td>' +
+          '<td>' + n(s.Docs)   + '</td>' +
+          '<td>' + n(s.Sheets) + '</td>' +
+          '<td>' + n(s.Slides) + '</td>' +
+          '<td>' + n(s.Drive)  + '</td>' +
+          '<td>' + n(s.Meet)   + '</td>' +
+          '<td>' + n(s.Gemini) + '</td>' +
+          '</tr>';
+      });
+
+      var tbody = document.getElementById('tbody');
+      var state = document.getElementById('tableState');
+      tbody.innerHTML = html;
+      state.style.display = rows.length === 0 ? '' : 'none';
+      if (rows.length === 0) state.innerHTML = '<h3>No users match the current filters</h3>';
+    }
+
+    // ── CSV export ────────────────────────────────────────────────────────────
+    function exportCSV() {
+      var cols = ['Email','License','Priority','Overall Usage','Active Days','Gmail','Docs','Sheets','Slides','Drive','Meet','Gemini'];
+      var lines = [cols.map(function(c) { return '"' + c + '"'; }).join(',')];
+      allUsers.forEach(function(u) {
+        var s = u.services || {};
+        lines.push([u.email, u.hasGeminiPro?'Pro':'Basic', u.overallUsagePriority,
+          u.overallUsage, u.activeDays,
+          s.Gmail||0, s.Docs||0, s.Sheets||0, s.Slides||0, s.Drive||0, s.Meet||0, s.Gemini||0
+        ].map(function(v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(','));
+      });
+      var a = document.createElement('a');
+      a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(lines.join('\n'));
+      a.download = 'sas-usage-fallback.csv';
+      a.click();
+    }
+
+    // ── load data ─────────────────────────────────────────────────────────────
+    google.script.run.withSuccessHandler(onUsage).withFailureHandler(function(e) {
+      document.getElementById('tableState').innerHTML = '<h3>Error loading data</h3><p>' + e.message + '</p>';
+    }).getUsageData();
+
+    google.script.run.withSuccessHandler(onDivisions).getDivisionData();
+  </script>
+</body>
+</html>

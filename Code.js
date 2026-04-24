@@ -164,7 +164,7 @@ function isAdmin(email) {
 function onOpen() {
   SpreadsheetApp.getUi()
       .createMenu('Custom Utilities')
-      .addItem('📊 View Usage Dashboard', 'showUsageDashboard')
+      .addItem('🔄 Run Full Sync', 'showProgressDialog')
       .addSeparator()
       .addItem('Process Pro User List (Renumber & Highlight)', 'highlightDuplicateEmailsAndRenumber')
       .addItem('Clear Highlights on Current Sheet', 'clearAllHighlightsOnCurrentSheet')
@@ -1107,15 +1107,64 @@ function clearAllHighlightsOnCurrentSheet() {
 }
 
 /**
- * Shows the usage analytics dashboard in a modal dialog.
+ * Opens the progress dialog and runs the full sync sequence.
+ * Called from the "Run Full Sync" menu item.
  */
-function showUsageDashboard() {
-  const html = HtmlService.createHtmlOutputFromFile('Dashboard')
-    .setWidth(1600)
-    .setHeight(900)
-    .setTitle('Usage Analytics Dashboard');
+function showProgressDialog() {
+  const html = HtmlService.createHtmlOutputFromFile('Progress')
+    .setWidth(520)
+    .setHeight(420);
+  SpreadsheetApp.getUi().showModalDialog(html, '🔄 Sync & Optimise');
+}
 
-  SpreadsheetApp.getUi().showModalDialog(html, 'Usage Analytics Dashboard');
+/**
+ * Runs all sync and optimisation operations in sequence.
+ * Called by Progress.html via google.script.run.
+ * Returns a structured result with a log and elapsed time.
+ */
+function runFullSync() {
+  const start = Date.now();
+  const log = [];
+  const stepResults = [];
+
+  function step(id, label, fn) {
+    log.push({ message: label + '…', type: 'info' });
+    try {
+      fn();
+      log.push({ message: '✓ ' + label, type: 'ok' });
+      stepResults.push({ id: id, ok: true });
+    } catch (e) {
+      log.push({ message: '✗ ' + label + ': ' + e.message, type: 'err' });
+      stepResults.push({ id: id, ok: false });
+    }
+  }
+
+  step('dupes', 'Detecting duplicate emails', function() {
+    processSheetNumberingAndDuplicates(USER_LIST_NAME, USER_COLS.EMAIL + 1, 6);
+    processSheetNumberingAndDuplicates(CHEATSHEET_NAME, CHEAT_COLS.EMAIL + 1, 9);
+    processSheetNumberingAndDuplicates(STUDENT_GEMINI_ACCESS_SHEET_NAME, STUDENT_COLS.EMAIL + 1, 8);
+  });
+
+  step('sync-staff', 'Syncing pro user list from staff list', function() {
+    syncUserListFromCheatsheet();
+  });
+
+  step('sync-usage', 'Syncing usage data to all sheets', function() {
+    syncUsageDataToAllSheets();
+  });
+
+  step('untracked', 'Updating untracked users sheet', function() {
+    updateUntrackedUsersSheet();
+  });
+
+  step('colors', 'Applying usage colour coding', function() {
+    applyUsageColorCoding();
+  });
+
+  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+  log.push({ message: 'All done in ' + elapsed + 's', type: 'ok' });
+
+  return { log: log, stepResults: stepResults, elapsed: elapsed };
 }
 
 /**
