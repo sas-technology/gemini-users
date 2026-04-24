@@ -11,7 +11,6 @@
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "googleapis": "^144.0.0",
     "react-chartjs-2": "^5.2.0",
     "chart.js": "^4.4.4"
   },
