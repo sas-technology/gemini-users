@@ -20,7 +20,7 @@ async function apsFetch<T>(endpoint: string, extra: Record<string, string> = {})
   });
 
   if (!res.ok) throw new Error(`Apps Script returned ${res.status}`);
-  const data = await res.json() as T & { error?: string };
+  const data = (await res.json()) as T & { error?: string };
   if (data.error) throw new Error(data.error);
   return data;
 }

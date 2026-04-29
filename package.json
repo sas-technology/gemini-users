@@ -1,0 +1,19 @@
+{
+  "name": "gemini-users",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "markdownlint": "markdownlint '**/*.md' --ignore node_modules --ignore nextjs-app/node_modules"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0",
+    "markdownlint-cli": "^0.43.0",
+    "prettier": "^3.4.2"
+  },
+  "lint-staged": {
+    "**/*.{js,ts,tsx,css,json,html,md,yaml,yml}": "prettier --write --ignore-unknown"
+  }
+}

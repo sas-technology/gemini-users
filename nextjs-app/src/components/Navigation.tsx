@@ -17,17 +17,30 @@ export default function Navigation() {
       <div className="nav-brand">SAS Usage Analytics</div>
       <ul className="nav-links">
         <li>
-          <Link href="/" className={pathname === '/' ? 'active' : ''}>Overview</Link>
+          <Link href="/" className={pathname === '/' ? 'active' : ''}>
+            Overview
+          </Link>
         </li>
         <li>
-          <Link href="/divisions" className={pathname === '/divisions' ? 'active' : ''}>Divisions</Link>
+          <Link href="/divisions" className={pathname === '/divisions' ? 'active' : ''}>
+            Divisions
+          </Link>
         </li>
       </ul>
       <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <span>Singapore American School</span>
         <button
           onClick={handleLogout}
-          style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
+          style={{
+            background: 'rgba(255,255,255,0.15)',
+            border: 'none',
+            color: 'white',
+            padding: '6px 14px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: 600,
+          }}
         >
           Logout
         </button>

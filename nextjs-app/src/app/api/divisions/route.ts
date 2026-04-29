@@ -6,7 +6,7 @@ import type { DivisionData } from '@/types';
 export async function GET() {
   try {
     const cached = cacheGet<DivisionData>('divisions');
-    const data = cached ?? await getDivisionData();
+    const data = cached ?? (await getDivisionData());
     if (!cached) cacheSet('divisions', data);
     return NextResponse.json(data);
   } catch (err) {

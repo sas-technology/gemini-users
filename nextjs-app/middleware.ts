@@ -4,7 +4,7 @@ const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/health'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) return NextResponse.next();
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) return NextResponse.next();
 
   const secret = process.env.DASHBOARD_SECRET;
   const cookie = request.cookies.get('sas-auth')?.value;

@@ -6,7 +6,7 @@ import type { StudentData } from '@/types';
 export async function GET() {
   try {
     const cached = cacheGet<StudentData>('students');
-    const data = cached ?? await getStudentData();
+    const data = cached ?? (await getStudentData());
     if (!cached) cacheSet('students', data);
     return NextResponse.json(data);
   } catch (err) {

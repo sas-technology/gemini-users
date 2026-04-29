@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const key = `user:${email.toLowerCase()}`;
     const cached = cacheGet<UserProfile>(key);
-    const data = cached ?? await getUserProfile(email);
+    const data = cached ?? (await getUserProfile(email));
     if (!cached && data) cacheSet(key, data);
     if (!data) return NextResponse.json({ error: 'User not found' }, { status: 404 });
     return NextResponse.json(data);
