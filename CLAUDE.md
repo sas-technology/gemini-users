@@ -57,6 +57,7 @@ The system operates on a single Google Spreadsheet with 7 sheet tabs. Data flows
 ### Dashboard (Dashboard.html)
 
 Self-contained HTML/CSS/JS with SAS branding:
+
 - Brand colors: SAS Red `#a0192a`, Blue `#1a2d58`, Yellow `#fabc00`
 - Division-specific colors for Elementary, Middle, High School, Admin
 - Usage level colors: High (red), Medium (orange), Low (yellow), Zero (green)
@@ -65,12 +66,12 @@ Self-contained HTML/CSS/JS with SAS branding:
 
 ### Sheet Tab Schema
 
-| Sheet | Purpose | Key columns |
-|-------|---------|-------------|
-| `staff_list` | Full staff directory (external source) | EMAIL, PRIMARY_SCHOOL, JOB_TITLE, ROLES |
-| `pro_user_list` | Gemini Pro license holders | EMAIL, DIVISION, USAGE, ACTIVE_DAYS |
-| `usage_counts` | Numerical usage metrics | EMAIL + per-service counts (Gmail, Docs, Sheets, etc.) |
-| `usage_by_priority` | Priority labels (High/Medium/Low/Zero) | Same structure as usage_counts |
-| `student_gemini_access` | Students with Gemini | EMAIL, CURRENT_GRADE, ENROLLMENT_STATUS |
-| `student_no_gemini_access` | Students without Gemini | Same structure |
-| `untracked_users` | Auto-generated: unknown emails in usage data | EMAIL, USAGE_PRIORITY, OVERALL_USAGE |
+| Sheet                      | Purpose                                      | Key columns                                            |
+| -------------------------- | -------------------------------------------- | ------------------------------------------------------ |
+| `staff_list`               | Full staff directory (external source)       | EMAIL, PRIMARY_SCHOOL, JOB_TITLE, ROLES                |
+| `pro_user_list`            | Gemini Pro license holders                   | EMAIL, DIVISION, USAGE, ACTIVE_DAYS                    |
+| `usage_counts`             | Numerical usage metrics                      | EMAIL + per-service counts (Gmail, Docs, Sheets, etc.) |
+| `usage_by_priority`        | Priority labels (High/Medium/Low/Zero)       | Same structure as usage_counts                         |
+| `student_gemini_access`    | Students with Gemini                         | EMAIL, CURRENT_GRADE, ENROLLMENT_STATUS                |
+| `student_no_gemini_access` | Students without Gemini                      | Same structure                                         |
+| `untracked_users`          | Auto-generated: unknown emails in usage data | EMAIL, USAGE_PRIORITY, OVERALL_USAGE                   |
