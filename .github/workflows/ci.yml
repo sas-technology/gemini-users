@@ -7,8 +7,9 @@ on:
     branches: [main]
 
 jobs:
-  root-format:
-    name: Format check (root)
+  # ── Level 1: Format gates ────────────────────────────────────────────────
+  format-root:
+    name: Format · root
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,8 +21,8 @@ jobs:
       - run: npm run format:check
       - run: npm run markdownlint
 
-  nextjs:
-    name: Next.js — typecheck / lint / test / build
+  format-nextjs:
+    name: Format · nextjs-app
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,17 +36,86 @@ jobs:
           cache-dependency-path: nextjs-app/package-lock.json
       - run: npm ci
       - run: npm run format:check
+
+  # ── Level 2: Static analysis (requires clean formatting) ────────────────
+  typecheck:
+    name: Typecheck · nextjs-app
+    needs: [format-root, format-nextjs]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nextjs-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: nextjs-app/package-lock.json
+      - run: npm ci
       - run: npm run typecheck
+
+  lint:
+    name: Lint · nextjs-app
+    needs: [format-root, format-nextjs]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nextjs-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: nextjs-app/package-lock.json
+      - run: npm ci
       - run: npm run lint
+
+  # ── Level 3: Tests (requires types to be valid) ──────────────────────────
+  test:
+    name: Test · nextjs-app
+    needs: [typecheck]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nextjs-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: nextjs-app/package-lock.json
+      - run: npm ci
       - run: npm test -- --run
+
+  # ── Level 4: Build (requires lint + tests to pass) ───────────────────────
+  build:
+    name: Build · nextjs-app
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nextjs-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: nextjs-app/package-lock.json
+      - run: npm ci
       - run: npm run build
         env:
           DASHBOARD_SECRET: ci-secret
           APPS_SCRIPT_URL: https://example.com
           APPS_SCRIPT_API_KEY: ci-key
 
+  # ── Level 5: Docker (requires successful Next.js build) ──────────────────
   docker:
     name: Docker build
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
