@@ -4,36 +4,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Google Workspace Apps Script project that manages and tracks Gemini AI usage across Singapore American School (SAS). It syncs staff/student data across multiple Google Sheets tabs and provides an interactive analytics dashboard.
+Google Workspace Apps Script project that manages and tracks Gemini AI usage across Singapore American School (SAS). It syncs staff/student data across multiple Google Sheets tabs and exposes a JSON API consumed by a self-hosted Next.js dashboard.
 
-## Development Setup
+## Repository Structure
 
-This is a Google Apps Script project managed with [clasp](https://github.com/nicholaschiang/clasp):
-
-```bash
-# Push local changes to Google Apps Script
-clasp push
-
-# Pull remote changes
-clasp pull
-
-# Open the script in browser
-clasp open
-
-# Open the bound spreadsheet
-clasp open --addon
+```
+/                         # Root — Apps Script source + dev tooling
+├── Code.js               # Sheet processing, sync logic, menu
+├── WebApp.js             # JSON API + fallback HTML dashboard
+├── Progress.html         # Modal shown while sync scripts run
+├── Fallback.html         # Emergency read-only dashboard (if Next.js is down)
+├── appsscript.json       # Apps Script runtime config
+└── nextjs-app/           # Self-hosted analytics dashboard (Next.js 15)
 ```
 
-There are no build steps, tests, or linters — code runs directly in the Apps Script V8 runtime.
+## Apps Script Development
 
-## Architecture
+Managed with [clasp](https://github.com/nicholaschiang/clasp):
+
+```bash
+clasp push          # Push local changes to Google Apps Script
+clasp pull          # Pull remote changes
+clasp open          # Open the script in browser
+clasp open --addon  # Open the bound spreadsheet
+```
+
+The Apps Script runtime is V8, Asia/Singapore timezone, Stackdriver logging. No build step — code runs directly.
+
+## Apps Script Architecture
 
 ### Files
 
-- **Code.js** — All backend logic: menu creation, auto-sync triggers, data synchronization, usage lookups, and dashboard data APIs
-- **Dashboard.html** — Self-contained SPA served as a modal dialog via `HtmlService`. Uses Chart.js 4.4.0 (CDN) for visualizations
-- **appsscript.json** — Runtime config (V8, Asia/Singapore timezone, Stackdriver logging)
-- **.clasp.json** — clasp deployment metadata
+- **Code.js** — All sheet logic: menu creation, auto-sync triggers, data synchronisation, and the `runFullSync()` function called by `Progress.html`
+- **WebApp.js** — Dual-mode `doGet` handler:
+  - JSON API mode (`?format=json&key=KEY&endpoint=...`) — consumed by the Next.js app
+  - Fallback HTML dashboard — rendered when Next.js is unavailable
+- **Progress.html** — SAS-branded modal dialog; calls `runFullSync()` via `google.script.run` and displays a live log
+- **Fallback.html** — Read-only emergency dashboard with stats grid, division cards, and filterable user table
 
 ### Data Flow
 
@@ -43,7 +50,7 @@ The system operates on a single Google Spreadsheet with 7 sheet tabs. Data flows
 2. **`syncUserListFromCheatsheet()`** copies staff data → `pro_user_list`
 3. **`syncUsageDataToAllSheets()`** merges usage data into all target sheets by email-based lookup
 4. **`updateUntrackedUsersSheet()`** identifies emails in usage data not found in any known list
-5. **Dashboard** reads aggregated data via `google.script.run` calls to `getUsageData()`, `getStudentData()`, `getStaffEmails()`
+5. **Next.js app** calls `/api/usage`, `/api/students`, `/api/divisions` → Next.js API routes → `WebApp.js` JSON API → sheet data
 
 ### Key Patterns
 
@@ -53,25 +60,38 @@ The system operates on a single Google Spreadsheet with 7 sheet tabs. Data flows
 - **Batch read/write** — all sheet operations use `getRange().getValues()` / `setValues()` for performance. Avoid cell-by-cell reads.
 - **Auto-sync on edit** — `onEdit(e)` triggers sync when specific sheets are modified.
 - **Toast messages** for user-facing status; `Logger` for debug output.
-
-### Dashboard (Dashboard.html)
-
-Self-contained HTML/CSS/JS with SAS branding:
-
-- Brand colors: SAS Red `#a0192a`, Blue `#1a2d58`, Yellow `#fabc00`
-- Division-specific colors for Elementary, Middle, High School, Admin
-- Usage level colors: High (red), Medium (orange), Low (yellow), Zero (green)
-- Quick filters (All Users, AI Pro, Basic Only, Non-Active, Students) and advanced filters
-- All data fetched via `google.script.run` — no external API calls
+- **API key auth** — `WebApp.js` reads `API_KEY` from Script Properties; the same value goes in the Next.js `.env` as `APPS_SCRIPT_API_KEY`.
 
 ### Sheet Tab Schema
 
 | Sheet                      | Purpose                                      | Key columns                                            |
 | -------------------------- | -------------------------------------------- | ------------------------------------------------------ |
 | `staff_list`               | Full staff directory (external source)       | EMAIL, PRIMARY_SCHOOL, JOB_TITLE, ROLES                |
-| `pro_user_list`            | Gemini Pro license holders                   | EMAIL, DIVISION, USAGE, ACTIVE_DAYS                    |
+| `pro_user_list`            | Gemini Pro licence holders                   | EMAIL, DIVISION, USAGE, ACTIVE_DAYS                    |
 | `usage_counts`             | Numerical usage metrics                      | EMAIL + per-service counts (Gmail, Docs, Sheets, etc.) |
 | `usage_by_priority`        | Priority labels (High/Medium/Low/Zero)       | Same structure as usage_counts                         |
 | `student_gemini_access`    | Students with Gemini                         | EMAIL, CURRENT_GRADE, ENROLLMENT_STATUS                |
 | `student_no_gemini_access` | Students without Gemini                      | Same structure                                         |
 | `untracked_users`          | Auto-generated: unknown emails in usage data | EMAIL, USAGE_PRIORITY, OVERALL_USAGE                   |
+
+## Next.js App (`nextjs-app/`)
+
+See [`nextjs-app/README.md`](nextjs-app/README.md) for full setup, environment variables, and deployment instructions.
+
+### SAS Brand Reference
+
+- **Colours**: Red `#a0192a`, Blue `#1a2d58`, Yellow `#fabc00`
+- **Division colours**: ES `#228ec2`, MS `#a0192a`, HS `#1a2d58`, Admin `#6d6f72`
+- **Usage priority colours**: High `#ff0000`, Medium `#ff9900`, Low `#ffcc00`, Zero `#28a745`
+
+## Dev Tooling
+
+| Tool           | Config                         | Run                                  |
+| -------------- | ------------------------------ | ------------------------------------ |
+| Prettier       | `.prettierrc`                  | `npm run format`                     |
+| markdownlint   | `.markdownlint.json`           | `npm run markdownlint`               |
+| Husky          | `.husky/pre-commit`            | Auto on `git commit`                 |
+| ESLint         | `nextjs-app/eslint.config.mjs` | `cd nextjs-app && npm run lint`      |
+| TypeScript     | `nextjs-app/tsconfig.json`     | `cd nextjs-app && npm run typecheck` |
+| Vitest         | `nextjs-app/vitest.config.ts`  | `cd nextjs-app && npm test`          |
+| GitHub Actions | `.github/workflows/ci.yml`     | Auto on push/PR                      |
