@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest a new feature or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation or limitation you're running into.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What would you like to see added or changed?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches you thought of?
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Next.js dashboard (UI / charts)
+        - Data / API
+        - Apps Script sync
+        - Deployment / infrastructure
+        - Developer tooling
+        - Documentation
+    validations:
+      required: true

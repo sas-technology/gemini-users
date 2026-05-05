@@ -12,7 +12,7 @@ Tracks and visualises Google Gemini AI usage across Singapore American School (S
 
 ## Repository structure
 
-```
+```text
 /
 ├── Code.js               # Sheet sync, deduplication, auto-triggers
 ├── WebApp.js             # JSON API + fallback HTML dashboard

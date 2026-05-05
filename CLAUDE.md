@@ -8,7 +8,7 @@ Google Workspace Apps Script project that manages and tracks Gemini AI usage acr
 
 ## Repository Structure
 
-```
+```text
 /                         # Root — Apps Script source + dev tooling
 ├── Code.js               # Sheet processing, sync logic, menu
 ├── WebApp.js             # JSON API + fallback HTML dashboard

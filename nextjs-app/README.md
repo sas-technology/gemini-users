@@ -84,7 +84,7 @@ docker run -p 3000:3000 \
 
 ## Architecture
 
-```
+```text
 src/
 ├── app/
 │   ├── (dashboard)/          # Authenticated pages (share nav layout)
@@ -114,7 +114,7 @@ src/
 
 ### Data flow
 
-```
+```text
 Browser → Next.js API route → lib/sheets.ts → Apps Script JSON API → Google Sheet
                            ↑
                       5-min cache
