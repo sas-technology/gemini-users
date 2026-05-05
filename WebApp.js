@@ -1,64 +1,73 @@
 /**
- * Web App entry point and router for the standalone analytics dashboard.
+ * Web App entry point — serves two roles:
  *
- * Deploy as: Web App → Execute as "User accessing the web app" → Access "Anyone with Google Account"
+ * 1. JSON data API for the Next.js dashboard (when ?format=json&key=KEY&endpoint=...)
+ * 2. Fallback read-only HTML dashboard (when Next.js is unavailable)
  *
- * Routes (via ?page= parameter):
- * - overview (default): Enhanced usage analytics dashboard
- * - divisions: Division-level drilldown and comparison
- * - user: Individual user profile (?page=user&email=...)
+ * Deploy as: Web App → Execute as "Me" → Access "Anyone with Google Account"
  *
- * Access restricted to ADMIN_EMAILS defined in Code.js.
- */
-
-/**
- * Serves the web app. Called automatically when the deployed URL is accessed.
- * @param {GoogleAppsScript.Events.DoGet} e - The event parameter
- * @return {GoogleAppsScript.HTML.HtmlOutput} The HTML page to serve
+ * API key: Apps Script editor → Project Settings → Script Properties → API_KEY = <secret>
+ * (Same value goes in the Next.js .env as APPS_SCRIPT_API_KEY)
  */
 function doGet(e) {
-  const userEmail = Session.getActiveUser().getEmail();
+  var params = e && e.parameter ? e.parameter : {};
 
-  // Check admin access
+  // ── JSON API (called by Next.js) ──────────────────────────────────────────
+  if (params.format === 'json') {
+    var storedKey = PropertiesService.getScriptProperties().getProperty('API_KEY');
+    if (!storedKey || params.key !== storedKey) {
+      return ContentService.createTextOutput(JSON.stringify({ error: 'Unauthorized' })).setMimeType(
+        ContentService.MimeType.JSON
+      );
+    }
+
+    var data;
+    switch (params.endpoint) {
+      case 'usage':
+        data = getUsageData();
+        break;
+      case 'students':
+        data = getStudentData();
+        break;
+      case 'divisions':
+        data = getDivisionData();
+        break;
+      case 'user':
+        data = getUserProfile(params.email || '');
+        break;
+      default:
+        data = { error: 'Unknown endpoint: ' + params.endpoint };
+    }
+
+    return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(
+      ContentService.MimeType.JSON
+    );
+  }
+
+  // ── Fallback HTML dashboard ───────────────────────────────────────────────
+  // Shown when the Next.js app is unavailable.
+  // Restricted to the same admin emails defined in Code.js.
+  var userEmail = Session.getActiveUser().getEmail();
   if (ADMIN_EMAILS.length > 0 && !isAdmin(userEmail)) {
     return HtmlService.createHtmlOutput(
-      '<html><body style="font-family: DM Sans, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8f9fa;">' +
-      '<div style="text-align: center; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">' +
-      '<h1 style="color: #a0192a;">Access Denied</h1>' +
-      '<p style="color: #666;">You do not have permission to view this dashboard.</p>' +
-      '<p style="color: #999; font-size: 14px;">Logged in as: ' + userEmail + '</p>' +
-      '</div></body></html>'
-    ).setTitle('Access Denied - SAS Analytics');
+      '<html><body style="font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;background:#f0f2f5">' +
+        '<div style="text-align:center;padding:40px;background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1)">' +
+        '<h1 style="color:#a0192a">Access Denied</h1>' +
+        '<p style="color:#666;margin-top:8px">Logged in as: ' +
+        userEmail +
+        '</p>' +
+        '</div></body></html>'
+    ).setTitle('Access Denied');
   }
 
-  const page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'overview';
-
-  let template;
-
-  switch (page) {
-    case 'divisions':
-      template = HtmlService.createTemplateFromFile('PageDivisions');
-      break;
-    case 'user':
-      template = HtmlService.createTemplateFromFile('PageUser');
-      template.userEmail = (e.parameter && e.parameter.email) ? e.parameter.email : '';
-      break;
-    case 'overview':
-    default:
-      template = HtmlService.createTemplateFromFile('PageOverview');
-      break;
-  }
-
-  return template.evaluate()
-    .setTitle('Usage Analytics Dashboard - SAS')
+  return HtmlService.createHtmlOutputFromFile('Fallback')
+    .setTitle('SAS Usage Analytics — Fallback')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
 }
 
 /**
- * Includes an HTML file as a partial. Use in templates as: <?!= include('Styles') ?>
- * @param {string} filename - The HTML file to include (without .html extension)
- * @return {string} The file content
+ * Includes an HTML partial. Used in templates as: <?!= include('filename') ?>
  */
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();

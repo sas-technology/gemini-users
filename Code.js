@@ -57,7 +57,7 @@ const USAGE_COLORS = {
   High: '#ff0000',
   Medium: '#ff9900',
   Low: '#ffcc00',
-  Zero: '#28a745'
+  Zero: '#28a745',
 };
 
 // Sheet names
@@ -71,53 +71,53 @@ const UNTRACKED_USERS_SHEET_NAME = 'untracked_users';
 
 // staff_list column indices (0-based for array access)
 const CHEAT_COLS = {
-  NO: 0,           // Column A (sequential number)
-  PERSON_ID: 1,    // Column B
-  FULL_NAME: 2,    // Column C
-  EMAIL: 3,        // Column D
+  NO: 0, // Column A (sequential number)
+  PERSON_ID: 1, // Column B
+  FULL_NAME: 2, // Column C
+  EMAIL: 3, // Column D
   PRIMARY_SCHOOL: 4, // Column E
-  JOB_TITLE: 5,    // Column F
-  ROLES: 6,        // Column G
-  USAGE: 7,        // Column H (Usage priority label)
-  ACTIVE_DAYS: 8   // Column I (Active days count)
+  JOB_TITLE: 5, // Column F
+  ROLES: 6, // Column G
+  USAGE: 7, // Column H (Usage priority label)
+  ACTIVE_DAYS: 8, // Column I (Active days count)
 };
 
 // User list column indices (0-based for array access)
 const USER_COLS = {
-  NO: 0,           // Column A
-  NAME: 1,         // Column B
-  EMAIL: 2,        // Column C
-  DIVISION: 3,     // Column D
-  JOB_TITLE: 4,    // Column E
-  PERSON_ID: 5,    // Column F
-  USAGE: 6,        // Column G
-  ACTIVE_DAYS: 7   // Column H
+  NO: 0, // Column A
+  NAME: 1, // Column B
+  EMAIL: 2, // Column C
+  DIVISION: 3, // Column D
+  JOB_TITLE: 4, // Column E
+  PERSON_ID: 5, // Column F
+  USAGE: 6, // Column G
+  ACTIVE_DAYS: 7, // Column H
 };
 
 // Usage sheet column indices (0-based for array access)
 const USAGE_COLS = {
-  EMAIL: 0,           // Column A
-  OVERALL_USAGE: 1,   // Column B (Overall usage)
-  ACTIVE_DAYS: 2,     // Column C (Active days)
-  GMAIL: 3,           // Column D (Gmail usage)
-  DOCS: 4,            // Column E (Docs usage)
-  SHEETS: 5,          // Column F (Sheets usage)
-  SLIDES: 6,          // Column G (Slides usage)
-  DRIVE: 7,           // Column H (Drive usage)
-  MEET: 8,            // Column I (Meet usage)
-  GEMINI: 9           // Column J (Gemini app usage)
+  EMAIL: 0, // Column A
+  OVERALL_USAGE: 1, // Column B (Overall usage)
+  ACTIVE_DAYS: 2, // Column C (Active days)
+  GMAIL: 3, // Column D (Gmail usage)
+  DOCS: 4, // Column E (Docs usage)
+  SHEETS: 5, // Column F (Sheets usage)
+  SLIDES: 6, // Column G (Slides usage)
+  DRIVE: 7, // Column H (Drive usage)
+  MEET: 8, // Column I (Meet usage)
+  GEMINI: 9, // Column J (Gemini app usage)
 };
 
 // student_gemini_access sheet column indices (0-based for array access)
 const STUDENT_COLS = {
-  NO: 0,              // Column A
-  PERSON_ID: 1,       // Column B
-  FULL_NAME: 2,       // Column C
-  EMAIL: 3,           // Column D
-  CURRENT_GRADE: 4,   // Column E
+  NO: 0, // Column A
+  PERSON_ID: 1, // Column B
+  FULL_NAME: 2, // Column C
+  EMAIL: 3, // Column D
+  CURRENT_GRADE: 4, // Column E
   ENROLLMENT_STATUS: 5, // Column F
-  USAGE: 6,           // Column G (Usage priority label)
-  ACTIVE_DAYS: 7      // Column H (Active days count)
+  USAGE: 6, // Column G (Usage priority label)
+  ACTIVE_DAYS: 7, // Column H (Active days count)
 };
 
 /**
@@ -126,7 +126,7 @@ const STUDENT_COLS = {
  * @return {string} Normalized email or empty string
  */
 function normalizeEmail(value) {
-  return (value !== null && value !== undefined) ? String(value).trim().toLowerCase() : '';
+  return value !== null && value !== undefined ? String(value).trim().toLowerCase() : '';
 }
 
 /**
@@ -163,16 +163,16 @@ function isAdmin(email) {
  */
 function onOpen() {
   SpreadsheetApp.getUi()
-      .createMenu('Custom Utilities')
-      .addItem('📊 View Usage Dashboard', 'showUsageDashboard')
-      .addSeparator()
-      .addItem('Process Pro User List (Renumber & Highlight)', 'highlightDuplicateEmailsAndRenumber')
-      .addItem('Clear Highlights on Current Sheet', 'clearAllHighlightsOnCurrentSheet')
-      .addSeparator()
-      .addItem('Sync Pro User List from Staff List', 'syncUserListFromCheatsheet')
-      .addItem('Sync Usage Data to All Sheets', 'syncUsageDataToAllSheets')
-      .addItem('Update Untracked Users Sheet', 'updateUntrackedUsersSheet')
-      .addToUi();
+    .createMenu('Custom Utilities')
+    .addItem('🔄 Run Full Sync', 'showProgressDialog')
+    .addSeparator()
+    .addItem('Process Pro User List (Renumber & Highlight)', 'highlightDuplicateEmailsAndRenumber')
+    .addItem('Clear Highlights on Current Sheet', 'clearAllHighlightsOnCurrentSheet')
+    .addSeparator()
+    .addItem('Sync Pro User List from Staff List', 'syncUserListFromCheatsheet')
+    .addItem('Sync Usage Data to All Sheets', 'syncUsageDataToAllSheets')
+    .addItem('Update Untracked Users Sheet', 'updateUntrackedUsersSheet')
+    .addToUi();
 
   // Automatically process all sheets on open
   // Process numbering and duplicates for all sheets
@@ -219,7 +219,11 @@ function highlightDuplicateEmailsAndRenumber() {
 
   // 1. Check if the current sheet is "pro_user_list"
   if (sheet.getName() !== USER_LIST_NAME) {
-    spreadsheet.toast(`Skipped: Numbering only runs on the "${USER_LIST_NAME}" sheet.`, 'Operation Aborted', 5);
+    spreadsheet.toast(
+      `Skipped: Numbering only runs on the "${USER_LIST_NAME}" sheet.`,
+      'Operation Aborted',
+      5
+    );
     return;
   }
 
@@ -235,16 +239,17 @@ function highlightDuplicateEmailsAndRenumber() {
     }
     sheet.getRange(FIRST_DATA_ROW, 1, numDataRows, 1).setValues(numbers);
   } else if (lastRow < FIRST_DATA_ROW && lastRow > 0) {
-     // This case means there's only a header row or fewer rows than FIRST_DATA_ROW.
-     // No data rows to number.
-     // If there were previously numbers in column A below where data rows used to be,
-     // they are not explicitly cleared by this section, but new data would get renumbered.
+    // This case means there's only a header row or fewer rows than FIRST_DATA_ROW.
+    // No data rows to number.
+    // If there were previously numbers in column A below where data rows used to be,
+    // they are not explicitly cleared by this section, but new data would get renumbered.
   }
   // If lastRow is 0 (empty sheet), no numbering occurs.
 
   // 3. Highlight duplicate emails in Column C
   let emailValues = [];
-  if (lastRow > 0) { // Only try to get values if there's content
+  if (lastRow > 0) {
+    // Only try to get values if there's content
     // Consider C1:C[lastRow] to only process rows with content.
     // If C can be empty but other columns define lastRow, this is fine.
     emailValues = sheet.getRange(1, 3, lastRow, 1).getValues(); // Column C data from row 1 to lastRow
@@ -253,7 +258,7 @@ function highlightDuplicateEmailsAndRenumber() {
     return; // Nothing to process if sheet is empty
   }
 
-  const emailCounts = {};       // Stores first row number for each email
+  const emailCounts = {}; // Stores first row number for each email
   const rowsToHighlight = new Set(); // Stores 1-indexed row numbers to highlight
 
   for (let i = 0; i < emailValues.length; i++) {
@@ -266,8 +271,8 @@ function highlightDuplicateEmailsAndRenumber() {
     }
 
     if (emailCounts[email]) {
-      rowsToHighlight.add(i + 1);                 // Add current row
-      rowsToHighlight.add(emailCounts[email]);    // Add the first row where this email was seen
+      rowsToHighlight.add(i + 1); // Add current row
+      rowsToHighlight.add(emailCounts[email]); // Add the first row where this email was seen
     } else {
       emailCounts[email] = i + 1; // Store the 1-indexed row of the first occurrence
     }
@@ -286,7 +291,7 @@ function highlightDuplicateEmailsAndRenumber() {
 
   // 5. Apply new highlights
   let highlightedCount = 0;
-  rowsToHighlight.forEach(rowNum => {
+  rowsToHighlight.forEach((rowNum) => {
     // Ensure rowNum is valid and within the actual content range of the sheet
     if (rowNum > 0 && rowNum <= lastRow) {
       sheet.getRange(rowNum, 1, 1, 5).setBackground('red'); // Highlight A:E
@@ -297,7 +302,11 @@ function highlightDuplicateEmailsAndRenumber() {
   SpreadsheetApp.flush(); // Apply all pending changes
 
   if (highlightedCount > 0) {
-    spreadsheet.toast(`Processed: ${highlightedCount} row(s) involved in duplicates highlighted. Column A renumbered.`, 'Success!', 7);
+    spreadsheet.toast(
+      `Processed: ${highlightedCount} row(s) involved in duplicates highlighted. Column A renumbered.`,
+      'Success!',
+      7
+    );
   } else {
     spreadsheet.toast('Processed: No duplicate emails found. Column A renumbered.', 'Success!', 5);
   }
@@ -371,7 +380,7 @@ function processSheetNumberingAndDuplicates(sheetName, emailColIndex, lastHighli
 
   // 4. Apply new highlights
   let highlightedCount = 0;
-  rowsToHighlight.forEach(rowNum => {
+  rowsToHighlight.forEach((rowNum) => {
     if (rowNum > 0 && rowNum <= lastRow) {
       sheet.getRange(rowNum, 1, 1, lastHighlightCol).setBackground('red');
       highlightedCount++;
@@ -381,7 +390,9 @@ function processSheetNumberingAndDuplicates(sheetName, emailColIndex, lastHighli
   SpreadsheetApp.flush();
 
   if (highlightedCount > 0) {
-    Logger.log(`Sheet "${sheetName}": ${highlightedCount} row(s) with duplicates highlighted. Column A renumbered.`);
+    Logger.log(
+      `Sheet "${sheetName}": ${highlightedCount} row(s) with duplicates highlighted. Column A renumbered.`
+    );
   } else {
     Logger.log(`Sheet "${sheetName}": No duplicate emails found. Column A renumbered.`);
   }
@@ -441,7 +452,9 @@ function syncUserListFromCheatsheet() {
   }
 
   // Read all data from Staff List (including header for reference)
-  const staffData = staffList.getRange(FIRST_DATA_ROW, 1, staffLastRow - FIRST_DATA_ROW + 1, 9).getValues();
+  const staffData = staffList
+    .getRange(FIRST_DATA_ROW, 1, staffLastRow - FIRST_DATA_ROW + 1, 9)
+    .getValues();
 
   // Build email lookup map from Staff List
   const staffMap = {};
@@ -454,13 +467,15 @@ function syncUserListFromCheatsheet() {
         fullName: staffData[i][CHEAT_COLS.FULL_NAME],
         primarySchool: staffData[i][CHEAT_COLS.PRIMARY_SCHOOL],
         jobTitle: staffData[i][CHEAT_COLS.JOB_TITLE],
-        roles: staffData[i][CHEAT_COLS.ROLES]
+        roles: staffData[i][CHEAT_COLS.ROLES],
       };
     }
   }
 
   // Read all data from User list
-  const userData = userList.getRange(FIRST_DATA_ROW, 1, userLastRow - FIRST_DATA_ROW + 1, 6).getValues();
+  const userData = userList
+    .getRange(FIRST_DATA_ROW, 1, userLastRow - FIRST_DATA_ROW + 1, 6)
+    .getValues();
 
   let matchCount = 0;
   let updateCount = 0;
@@ -571,13 +586,18 @@ function syncUsageDataToUserList() {
   }
 
   // Read all data from usage_counts sheet (all 10 columns) for Active Days
-  const usageCountsData = usageCountsSheet.getRange(FIRST_DATA_ROW, 1, usageCountsLastRow - FIRST_DATA_ROW + 1, 10).getValues();
+  const usageCountsData = usageCountsSheet
+    .getRange(FIRST_DATA_ROW, 1, usageCountsLastRow - FIRST_DATA_ROW + 1, 10)
+    .getValues();
 
   // Read all data from usage_by_priority sheet (all 10 columns) for priority labels
   const usagePriorityLastRow = usagePrioritySheet.getLastRow();
-  const usagePriorityData = usagePriorityLastRow >= FIRST_DATA_ROW
-    ? usagePrioritySheet.getRange(FIRST_DATA_ROW, 1, usagePriorityLastRow - FIRST_DATA_ROW + 1, 10).getValues()
-    : [];
+  const usagePriorityData =
+    usagePriorityLastRow >= FIRST_DATA_ROW
+      ? usagePrioritySheet
+          .getRange(FIRST_DATA_ROW, 1, usagePriorityLastRow - FIRST_DATA_ROW + 1, 10)
+          .getValues()
+      : [];
 
   // Build email lookup map from usage_counts sheet (for Active Days)
   const usageCountsMap = {};
@@ -586,7 +606,7 @@ function syncUsageDataToUserList() {
 
     if (email !== '') {
       usageCountsMap[email] = {
-        activeDays: usageCountsData[i][USAGE_COLS.ACTIVE_DAYS]
+        activeDays: usageCountsData[i][USAGE_COLS.ACTIVE_DAYS],
       };
     }
   }
@@ -598,13 +618,15 @@ function syncUsageDataToUserList() {
 
     if (email !== '') {
       usagePriorityMap[email] = {
-        overallUsagePriority: usagePriorityData[i][USAGE_COLS.OVERALL_USAGE] || 'Zero'
+        overallUsagePriority: usagePriorityData[i][USAGE_COLS.OVERALL_USAGE] || 'Zero',
       };
     }
   }
 
   // Read all data from User list (now including columns G and H)
-  const userData = userList.getRange(FIRST_DATA_ROW, 1, userLastRow - FIRST_DATA_ROW + 1, 8).getValues();
+  const userData = userList
+    .getRange(FIRST_DATA_ROW, 1, userLastRow - FIRST_DATA_ROW + 1, 8)
+    .getValues();
 
   let matchCount = 0;
   let updateCount = 0;
@@ -666,7 +688,9 @@ function applyUsageColorCoding(userList, lastRow, usagePrioritySheet) {
   }
 
   // Read all data from usage_by_priority sheet (columns A and B: Email and Overall usage priority)
-  const priorityData = usagePrioritySheet.getRange(FIRST_DATA_ROW, 1, priorityLastRow - FIRST_DATA_ROW + 1, 2).getValues();
+  const priorityData = usagePrioritySheet
+    .getRange(FIRST_DATA_ROW, 1, priorityLastRow - FIRST_DATA_ROW + 1, 2)
+    .getValues();
 
   // Build email lookup map from priority sheet
   const priorityMap = {};
@@ -680,10 +704,17 @@ function applyUsageColorCoding(userList, lastRow, usagePrioritySheet) {
   }
 
   // Read email addresses from User list
-  const userEmails = userList.getRange(FIRST_DATA_ROW, USER_COLS.EMAIL + 1, lastRow - FIRST_DATA_ROW + 1, 1).getValues();
+  const userEmails = userList
+    .getRange(FIRST_DATA_ROW, USER_COLS.EMAIL + 1, lastRow - FIRST_DATA_ROW + 1, 1)
+    .getValues();
 
   const usageColumn = USER_COLS.USAGE + 1; // Convert 0-based to 1-based column number
-  const usageRange = userList.getRange(FIRST_DATA_ROW, usageColumn, lastRow - FIRST_DATA_ROW + 1, 1);
+  const usageRange = userList.getRange(
+    FIRST_DATA_ROW,
+    usageColumn,
+    lastRow - FIRST_DATA_ROW + 1,
+    1
+  );
   const backgrounds = [];
 
   for (let i = 0; i < userEmails.length; i++) {
@@ -737,7 +768,9 @@ function applyUsageColorCodingToSheet(sheetName, emailColIndex, usageColIndex) {
     return;
   }
 
-  const priorityData = usagePrioritySheet.getRange(FIRST_DATA_ROW, 1, priorityLastRow - FIRST_DATA_ROW + 1, 2).getValues();
+  const priorityData = usagePrioritySheet
+    .getRange(FIRST_DATA_ROW, 1, priorityLastRow - FIRST_DATA_ROW + 1, 2)
+    .getValues();
 
   // Build email lookup map from priority sheet
   const priorityMap = {};
@@ -751,7 +784,9 @@ function applyUsageColorCodingToSheet(sheetName, emailColIndex, usageColIndex) {
   }
 
   // Read email addresses from sheet
-  const sheetEmails = sheet.getRange(FIRST_DATA_ROW, emailColIndex + 1, lastRow - FIRST_DATA_ROW + 1, 1).getValues();
+  const sheetEmails = sheet
+    .getRange(FIRST_DATA_ROW, emailColIndex + 1, lastRow - FIRST_DATA_ROW + 1, 1)
+    .getValues();
 
   const usageColumn = usageColIndex + 1; // Convert 0-based to 1-based column number
   const usageRange = sheet.getRange(FIRST_DATA_ROW, usageColumn, lastRow - FIRST_DATA_ROW + 1, 1);
@@ -796,7 +831,11 @@ function ensureUsageHeaders(sheetName, usageColIndex, activeDaysColIndex) {
   const usageHeader = sheet.getRange(HEADER_ROW, usageColIndex).getValue();
   if (usageHeader === '' || usageHeader === null) {
     sheet.getRange(HEADER_ROW, usageColIndex).setValue('Usage');
-    sheet.getRange(HEADER_ROW, usageColIndex).setFontWeight('bold').setBackground('#1a2d58').setFontColor('#ffffff');
+    sheet
+      .getRange(HEADER_ROW, usageColIndex)
+      .setFontWeight('bold')
+      .setBackground('#1a2d58')
+      .setFontColor('#ffffff');
     Logger.log(`Added "Usage" header to ${sheetName} column ${usageColIndex}`);
   }
 
@@ -804,7 +843,11 @@ function ensureUsageHeaders(sheetName, usageColIndex, activeDaysColIndex) {
   const activeDaysHeader = sheet.getRange(HEADER_ROW, activeDaysColIndex).getValue();
   if (activeDaysHeader === '' || activeDaysHeader === null) {
     sheet.getRange(HEADER_ROW, activeDaysColIndex).setValue('Active Days');
-    sheet.getRange(HEADER_ROW, activeDaysColIndex).setFontWeight('bold').setBackground('#1a2d58').setFontColor('#ffffff');
+    sheet
+      .getRange(HEADER_ROW, activeDaysColIndex)
+      .setFontWeight('bold')
+      .setBackground('#1a2d58')
+      .setFontColor('#ffffff');
     Logger.log(`Added "Active Days" header to ${sheetName} column ${activeDaysColIndex}`);
   }
 
@@ -834,11 +877,18 @@ function syncUsageDataToAllSheets() {
   }
 
   // Build lookup maps for usage data
-  const {usageCountsMap, usagePriorityMap} = buildUsageLookupMaps(usageCountsSheet, usagePrioritySheet);
+  const { usageCountsMap, usagePriorityMap } = buildUsageLookupMaps(
+    usageCountsSheet,
+    usagePrioritySheet
+  );
 
   // Ensure headers are present on all sheets
   ensureUsageHeaders(CHEATSHEET_NAME, CHEAT_COLS.USAGE + 1, CHEAT_COLS.ACTIVE_DAYS + 1); // Columns H, I (8, 9)
-  ensureUsageHeaders(STUDENT_GEMINI_ACCESS_SHEET_NAME, STUDENT_COLS.USAGE + 1, STUDENT_COLS.ACTIVE_DAYS + 1); // Columns G, H (7, 8)
+  ensureUsageHeaders(
+    STUDENT_GEMINI_ACCESS_SHEET_NAME,
+    STUDENT_COLS.USAGE + 1,
+    STUDENT_COLS.ACTIVE_DAYS + 1
+  ); // Columns G, H (7, 8)
 
   // Sync to pro_user_list (maintains backward compatibility with existing function)
   syncUsageDataToUserList();
@@ -847,11 +897,22 @@ function syncUsageDataToAllSheets() {
   syncUsageToSheet(spreadsheet, CHEATSHEET_NAME, CHEAT_COLS, usageCountsMap, usagePriorityMap, 9);
 
   // Sync to student_gemini_access
-  syncUsageToSheet(spreadsheet, STUDENT_GEMINI_ACCESS_SHEET_NAME, STUDENT_COLS, usageCountsMap, usagePriorityMap, 8);
+  syncUsageToSheet(
+    spreadsheet,
+    STUDENT_GEMINI_ACCESS_SHEET_NAME,
+    STUDENT_COLS,
+    usageCountsMap,
+    usagePriorityMap,
+    8
+  );
 
   // Apply color coding to all sheets with usage columns
   applyUsageColorCodingToSheet(CHEATSHEET_NAME, CHEAT_COLS.EMAIL, CHEAT_COLS.USAGE);
-  applyUsageColorCodingToSheet(STUDENT_GEMINI_ACCESS_SHEET_NAME, STUDENT_COLS.EMAIL, STUDENT_COLS.USAGE);
+  applyUsageColorCodingToSheet(
+    STUDENT_GEMINI_ACCESS_SHEET_NAME,
+    STUDENT_COLS.EMAIL,
+    STUDENT_COLS.USAGE
+  );
 
   spreadsheet.toast('Usage data synced to all sheets', 'Sync Complete', 5);
 }
@@ -864,13 +925,19 @@ function buildUsageLookupMaps(usageCountsSheet, usagePrioritySheet) {
   const usageCountsLastRow = usageCountsSheet.getLastRow();
   const usagePriorityLastRow = usagePrioritySheet.getLastRow();
 
-  const usageCountsData = usageCountsLastRow >= FIRST_DATA_ROW
-    ? usageCountsSheet.getRange(FIRST_DATA_ROW, 1, usageCountsLastRow - FIRST_DATA_ROW + 1, 10).getValues()
-    : [];
+  const usageCountsData =
+    usageCountsLastRow >= FIRST_DATA_ROW
+      ? usageCountsSheet
+          .getRange(FIRST_DATA_ROW, 1, usageCountsLastRow - FIRST_DATA_ROW + 1, 10)
+          .getValues()
+      : [];
 
-  const usagePriorityData = usagePriorityLastRow >= FIRST_DATA_ROW
-    ? usagePrioritySheet.getRange(FIRST_DATA_ROW, 1, usagePriorityLastRow - FIRST_DATA_ROW + 1, 10).getValues()
-    : [];
+  const usagePriorityData =
+    usagePriorityLastRow >= FIRST_DATA_ROW
+      ? usagePrioritySheet
+          .getRange(FIRST_DATA_ROW, 1, usagePriorityLastRow - FIRST_DATA_ROW + 1, 10)
+          .getValues()
+      : [];
 
   // Build counts map
   const usageCountsMap = {};
@@ -878,7 +945,7 @@ function buildUsageLookupMaps(usageCountsSheet, usagePrioritySheet) {
     const email = normalizeEmail(usageCountsData[i][USAGE_COLS.EMAIL]);
     if (email !== '') {
       usageCountsMap[email] = {
-        activeDays: usageCountsData[i][USAGE_COLS.ACTIVE_DAYS] || 0
+        activeDays: usageCountsData[i][USAGE_COLS.ACTIVE_DAYS] || 0,
       };
     }
   }
@@ -889,12 +956,12 @@ function buildUsageLookupMaps(usageCountsSheet, usagePrioritySheet) {
     const email = normalizeEmail(usagePriorityData[i][USAGE_COLS.EMAIL]);
     if (email !== '') {
       usagePriorityMap[email] = {
-        overallUsagePriority: usagePriorityData[i][USAGE_COLS.OVERALL_USAGE] || 'Zero'
+        overallUsagePriority: usagePriorityData[i][USAGE_COLS.OVERALL_USAGE] || 'Zero',
       };
     }
   }
 
-  return {usageCountsMap, usagePriorityMap};
+  return { usageCountsMap, usagePriorityMap };
 }
 
 /**
@@ -906,7 +973,14 @@ function buildUsageLookupMaps(usageCountsSheet, usagePrioritySheet) {
  * @param {object} usagePriorityMap - Map of email to usage priority
  * @param {number} totalCols - Total number of columns to read/write
  */
-function syncUsageToSheet(spreadsheet, sheetName, colDefs, usageCountsMap, usagePriorityMap, totalCols) {
+function syncUsageToSheet(
+  spreadsheet,
+  sheetName,
+  colDefs,
+  usageCountsMap,
+  usagePriorityMap,
+  totalCols
+) {
   const sheet = spreadsheet.getSheetByName(sheetName);
   if (!sheet) {
     Logger.log(`Sheet "${sheetName}" not found. Skipping.`);
@@ -919,15 +993,17 @@ function syncUsageToSheet(spreadsheet, sheetName, colDefs, usageCountsMap, usage
     return;
   }
 
-  const sheetData = sheet.getRange(FIRST_DATA_ROW, 1, lastRow - FIRST_DATA_ROW + 1, totalCols).getValues();
+  const sheetData = sheet
+    .getRange(FIRST_DATA_ROW, 1, lastRow - FIRST_DATA_ROW + 1, totalCols)
+    .getValues();
   let updateCount = 0;
 
   for (let i = 0; i < sheetData.length; i++) {
     const email = normalizeEmail(sheetData[i][colDefs.EMAIL]);
 
     if (email !== '') {
-      const countsRecord = usageCountsMap[email] || {activeDays: 0};
-      const priorityRecord = usagePriorityMap[email] || {overallUsagePriority: 'Zero'};
+      const countsRecord = usageCountsMap[email] || { activeDays: 0 };
+      const priorityRecord = usagePriorityMap[email] || { overallUsagePriority: 'Zero' };
 
       const needsUpdate =
         sheetData[i][colDefs.USAGE] !== priorityRecord.overallUsagePriority ||
@@ -979,7 +1055,11 @@ function updateUntrackedUsersSheet() {
     // Set up headers
     const headers = [['Email', 'Usage Priority', 'Overall Usage', 'Active Days', 'Last Updated']];
     sheet.getRange(1, 1, 1, 5).setValues(headers);
-    sheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#1a2d58').setFontColor('#ffffff');
+    sheet
+      .getRange(1, 1, 1, 5)
+      .setFontWeight('bold')
+      .setBackground('#1a2d58')
+      .setFontColor('#ffffff');
     sheet.setFrozenRows(1);
   }
 
@@ -992,12 +1072,12 @@ function updateUntrackedUsersSheet() {
   // Populate with untracked users
   if (untrackedData.count > 0) {
     const now = new Date();
-    const rows = untrackedData.users.map(user => [
+    const rows = untrackedData.users.map((user) => [
       user.email,
       user.priority,
       user.overallUsage,
       user.activeDays,
-      now
+      now,
     ]);
 
     sheet.getRange(2, 1, rows.length, 5).setValues(rows);
@@ -1006,7 +1086,11 @@ function updateUntrackedUsersSheet() {
     sheet.autoResizeColumns(1, 5);
     sheet.setColumnWidth(5, 150); // Timestamp column
 
-    spreadsheet.toast(`Found ${untrackedData.count} untracked user(s)`, 'Untracked Users Updated', 5);
+    spreadsheet.toast(
+      `Found ${untrackedData.count} untracked user(s)`,
+      'Untracked Users Updated',
+      5
+    );
   } else {
     sheet.getRange(2, 1, 1, 5).setValues([['No untracked users found', '', '', '', new Date()]]);
     spreadsheet.toast('No untracked users found', 'Untracked Users Updated', 3);
@@ -1087,7 +1171,11 @@ function clearAllHighlightsOnCurrentSheet() {
   const sheet = spreadsheet.getActiveSheet();
 
   if (!shouldProcessSheet(sheet)) {
-    spreadsheet.toast('Skipped: This sheet should not be processed due to its name.', 'Operation Aborted', 5);
+    spreadsheet.toast(
+      'Skipped: This sheet should not be processed due to its name.',
+      'Operation Aborted',
+      5
+    );
     return;
   }
 
@@ -1107,15 +1195,62 @@ function clearAllHighlightsOnCurrentSheet() {
 }
 
 /**
- * Shows the usage analytics dashboard in a modal dialog.
+ * Opens the progress dialog and runs the full sync sequence.
+ * Called from the "Run Full Sync" menu item.
  */
-function showUsageDashboard() {
-  const html = HtmlService.createHtmlOutputFromFile('Dashboard')
-    .setWidth(1600)
-    .setHeight(900)
-    .setTitle('Usage Analytics Dashboard');
+function showProgressDialog() {
+  const html = HtmlService.createHtmlOutputFromFile('Progress').setWidth(520).setHeight(420);
+  SpreadsheetApp.getUi().showModalDialog(html, '🔄 Sync & Optimise');
+}
 
-  SpreadsheetApp.getUi().showModalDialog(html, 'Usage Analytics Dashboard');
+/**
+ * Runs all sync and optimisation operations in sequence.
+ * Called by Progress.html via google.script.run.
+ * Returns a structured result with a log and elapsed time.
+ */
+function runFullSync() {
+  const start = Date.now();
+  const log = [];
+  const stepResults = [];
+
+  function step(id, label, fn) {
+    log.push({ message: label + '…', type: 'info' });
+    try {
+      fn();
+      log.push({ message: '✓ ' + label, type: 'ok' });
+      stepResults.push({ id: id, ok: true });
+    } catch (e) {
+      log.push({ message: '✗ ' + label + ': ' + e.message, type: 'err' });
+      stepResults.push({ id: id, ok: false });
+    }
+  }
+
+  step('dupes', 'Detecting duplicate emails', function () {
+    processSheetNumberingAndDuplicates(USER_LIST_NAME, USER_COLS.EMAIL + 1, 6);
+    processSheetNumberingAndDuplicates(CHEATSHEET_NAME, CHEAT_COLS.EMAIL + 1, 9);
+    processSheetNumberingAndDuplicates(STUDENT_GEMINI_ACCESS_SHEET_NAME, STUDENT_COLS.EMAIL + 1, 8);
+  });
+
+  step('sync-staff', 'Syncing pro user list from staff list', function () {
+    syncUserListFromCheatsheet();
+  });
+
+  step('sync-usage', 'Syncing usage data to all sheets', function () {
+    syncUsageDataToAllSheets();
+  });
+
+  step('untracked', 'Updating untracked users sheet', function () {
+    updateUntrackedUsersSheet();
+  });
+
+  step('colors', 'Applying usage colour coding', function () {
+    applyUsageColorCoding();
+  });
+
+  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+  log.push({ message: 'All done in ' + elapsed + 's', type: 'ok' });
+
+  return { log: log, stepResults: stepResults, elapsed: elapsed };
 }
 
 /**
@@ -1168,7 +1303,9 @@ function getUsageData() {
   if (userList) {
     const userListLastRow = userList.getLastRow();
     if (userListLastRow >= FIRST_DATA_ROW) {
-      const userListEmails = userList.getRange(FIRST_DATA_ROW, USER_COLS.EMAIL + 1, userListLastRow - FIRST_DATA_ROW + 1, 1).getValues();
+      const userListEmails = userList
+        .getRange(FIRST_DATA_ROW, USER_COLS.EMAIL + 1, userListLastRow - FIRST_DATA_ROW + 1, 1)
+        .getValues();
       for (let i = 0; i < userListEmails.length; i++) {
         const email = normalizeEmail(userListEmails[i][0]);
         if (email !== '') {
@@ -1184,7 +1321,9 @@ function getUsageData() {
   if (staffList) {
     const staffLastRow = staffList.getLastRow();
     if (staffLastRow >= FIRST_DATA_ROW) {
-      const staffEmails = staffList.getRange(FIRST_DATA_ROW, CHEAT_COLS.EMAIL + 1, staffLastRow - FIRST_DATA_ROW + 1, 1).getValues();
+      const staffEmails = staffList
+        .getRange(FIRST_DATA_ROW, CHEAT_COLS.EMAIL + 1, staffLastRow - FIRST_DATA_ROW + 1, 1)
+        .getValues();
       for (let i = 0; i < staffEmails.length; i++) {
         const email = normalizeEmail(staffEmails[i][0]);
         if (email !== '') {
@@ -1201,7 +1340,9 @@ function getUsageData() {
   if (studentAccessSheet) {
     const studentLastRow = studentAccessSheet.getLastRow();
     if (studentLastRow >= FIRST_DATA_ROW) {
-      const studentEmails = studentAccessSheet.getRange(FIRST_DATA_ROW, STUDENT_COLS.EMAIL + 1, studentLastRow - FIRST_DATA_ROW + 1, 1).getValues();
+      const studentEmails = studentAccessSheet
+        .getRange(FIRST_DATA_ROW, STUDENT_COLS.EMAIL + 1, studentLastRow - FIRST_DATA_ROW + 1, 1)
+        .getValues();
       for (let i = 0; i < studentEmails.length; i++) {
         const email = normalizeEmail(studentEmails[i][0]);
         if (email !== '') {
@@ -1218,7 +1359,9 @@ function getUsageData() {
     const noAccessLastRow = studentNoAccessSheet.getLastRow();
     if (noAccessLastRow >= FIRST_DATA_ROW) {
       // Assuming same column structure as student_gemini_access
-      const noAccessEmails = studentNoAccessSheet.getRange(FIRST_DATA_ROW, STUDENT_COLS.EMAIL + 1, noAccessLastRow - FIRST_DATA_ROW + 1, 1).getValues();
+      const noAccessEmails = studentNoAccessSheet
+        .getRange(FIRST_DATA_ROW, STUDENT_COLS.EMAIL + 1, noAccessLastRow - FIRST_DATA_ROW + 1, 1)
+        .getValues();
       for (let i = 0; i < noAccessEmails.length; i++) {
         const email = normalizeEmail(noAccessEmails[i][0]);
         if (email !== '') {
@@ -1229,13 +1372,18 @@ function getUsageData() {
   }
 
   // Read all data from usage_counts sheet (all 10 columns) - numerical values
-  const usageCountsData = usageCountsSheet.getRange(FIRST_DATA_ROW, 1, lastRow - FIRST_DATA_ROW + 1, 10).getValues();
+  const usageCountsData = usageCountsSheet
+    .getRange(FIRST_DATA_ROW, 1, lastRow - FIRST_DATA_ROW + 1, 10)
+    .getValues();
 
   // Read all data from usage_by_priority sheet (all 10 columns) - priority labels
   const priorityLastRow = usagePrioritySheet.getLastRow();
-  const usagePriorityData = priorityLastRow >= FIRST_DATA_ROW
-    ? usagePrioritySheet.getRange(FIRST_DATA_ROW, 1, priorityLastRow - FIRST_DATA_ROW + 1, 10).getValues()
-    : [];
+  const usagePriorityData =
+    priorityLastRow >= FIRST_DATA_ROW
+      ? usagePrioritySheet
+          .getRange(FIRST_DATA_ROW, 1, priorityLastRow - FIRST_DATA_ROW + 1, 10)
+          .getValues()
+      : [];
 
   // Build email lookup map for priority labels
   const priorityMap = {};
@@ -1252,8 +1400,8 @@ function getUsageData() {
           Slides: usagePriorityData[i][USAGE_COLS.SLIDES] || 'Zero',
           Drive: usagePriorityData[i][USAGE_COLS.DRIVE] || 'Zero',
           Meet: usagePriorityData[i][USAGE_COLS.MEET] || 'Zero',
-          Gemini: usagePriorityData[i][USAGE_COLS.GEMINI] || 'Zero'
-        }
+          Gemini: usagePriorityData[i][USAGE_COLS.GEMINI] || 'Zero',
+        },
       };
     }
   }
@@ -1281,14 +1429,20 @@ function getUsageData() {
     const priorityLabels = priorityMap[email] || {
       overallUsagePriority: 'Zero',
       servicesPriority: {
-        Gmail: 'Zero', Docs: 'Zero', Sheets: 'Zero', Slides: 'Zero',
-        Drive: 'Zero', Meet: 'Zero', Gemini: 'Zero'
-      }
+        Gmail: 'Zero',
+        Docs: 'Zero',
+        Sheets: 'Zero',
+        Slides: 'Zero',
+        Drive: 'Zero',
+        Meet: 'Zero',
+        Gemini: 'Zero',
+      },
     };
 
     // Check if this user has usage but isn't in any known list
     if (email !== '' && overallUsage > 0) {
-      const isTracked = geminiProUsers.has(email) || knownStaff.has(email) || studentUsers.has(email);
+      const isTracked =
+        geminiProUsers.has(email) || knownStaff.has(email) || studentUsers.has(email);
 
       if (!isTracked) {
         untrackedUsersCount++;
@@ -1296,7 +1450,7 @@ function getUsageData() {
           email: row[USAGE_COLS.EMAIL] || '',
           overallUsage: overallUsage,
           activeDays: activeDays,
-          priority: priorityLabels.overallUsagePriority
+          priority: priorityLabels.overallUsagePriority,
         });
       }
     }
@@ -1319,14 +1473,16 @@ function getUsageData() {
           Slides: row[USAGE_COLS.SLIDES] || 0,
           Drive: row[USAGE_COLS.DRIVE] || 0,
           Meet: row[USAGE_COLS.MEET] || 0,
-          Gemini: row[USAGE_COLS.GEMINI] || 0
+          Gemini: row[USAGE_COLS.GEMINI] || 0,
         },
-        servicesPriority: priorityLabels.servicesPriority
+        servicesPriority: priorityLabels.servicesPriority,
       });
     }
   }
 
-  Logger.log(`Retrieved ${result.length} users from usage data out of ${usageCountsData.length} total users.`);
+  Logger.log(
+    `Retrieved ${result.length} users from usage data out of ${usageCountsData.length} total users.`
+  );
   Logger.log(`Gemini Pro license holders: ${geminiProUsers.size}`);
   Logger.log(`Known staff members: ${knownStaff.size}`);
   Logger.log(`Students with Gemini access: ${studentUsers.size}`);
@@ -1338,9 +1494,9 @@ function getUsageData() {
     users: result,
     untrackedUsers: {
       count: untrackedUsersCount,
-      users: untrackedUsersList
+      users: untrackedUsersList,
     },
-    studentsNoGeminiCount: studentsNoGemini.size
+    studentsNoGeminiCount: studentsNoGemini.size,
   };
 }
 
@@ -1358,11 +1514,11 @@ function getStudentData() {
       total: 0,
       byGrade: {},
       byEnrollmentStatus: {},
-      students: []
+      students: [],
     },
     withoutAccess: {
-      total: 0
-    }
+      total: 0,
+    },
   };
 
   // Process students WITHOUT Gemini access (just count them)
@@ -1377,7 +1533,9 @@ function getStudentData() {
   if (studentAccessSheet) {
     const accessLastRow = studentAccessSheet.getLastRow();
     if (accessLastRow >= FIRST_DATA_ROW) {
-      const studentData = studentAccessSheet.getRange(FIRST_DATA_ROW, 1, accessLastRow - FIRST_DATA_ROW + 1, 6).getValues();
+      const studentData = studentAccessSheet
+        .getRange(FIRST_DATA_ROW, 1, accessLastRow - FIRST_DATA_ROW + 1, 6)
+        .getValues();
 
       result.withAccess.total = studentData.length;
 
@@ -1406,7 +1564,7 @@ function getStudentData() {
           fullName: row[STUDENT_COLS.FULL_NAME],
           email: email,
           currentGrade: grade,
-          enrollmentStatus: enrollmentStatus
+          enrollmentStatus: enrollmentStatus,
         });
       }
     }
@@ -1440,7 +1598,9 @@ function getStaffEmails() {
     return result;
   }
 
-  const staffData = staffList.getRange(FIRST_DATA_ROW, CHEAT_COLS.EMAIL + 1, lastRow - FIRST_DATA_ROW + 1, 1).getValues();
+  const staffData = staffList
+    .getRange(FIRST_DATA_ROW, CHEAT_COLS.EMAIL + 1, lastRow - FIRST_DATA_ROW + 1, 1)
+    .getValues();
 
   for (let i = 0; i < staffData.length; i++) {
     const email = normalizeEmail(staffData[i][0]);
@@ -1473,14 +1633,19 @@ function getDivisionData() {
   }
 
   // Build usage lookup maps
-  const {usageCountsMap, usagePriorityMap} = buildUsageLookupMaps(usageCountsSheet, usagePrioritySheet);
+  const { usageCountsMap, usagePriorityMap } = buildUsageLookupMaps(
+    usageCountsSheet,
+    usagePrioritySheet
+  );
 
   // Build pro users set
   const geminiProUsers = new Set();
   if (userList) {
     const userLastRow = userList.getLastRow();
     if (userLastRow >= FIRST_DATA_ROW) {
-      const userEmails = userList.getRange(FIRST_DATA_ROW, USER_COLS.EMAIL + 1, userLastRow - FIRST_DATA_ROW + 1, 1).getValues();
+      const userEmails = userList
+        .getRange(FIRST_DATA_ROW, USER_COLS.EMAIL + 1, userLastRow - FIRST_DATA_ROW + 1, 1)
+        .getValues();
       for (let i = 0; i < userEmails.length; i++) {
         const email = normalizeEmail(userEmails[i][0]);
         if (email !== '') geminiProUsers.add(email);
@@ -1494,7 +1659,9 @@ function getDivisionData() {
     return { divisions: {} };
   }
 
-  const staffData = staffList.getRange(FIRST_DATA_ROW, 1, staffLastRow - FIRST_DATA_ROW + 1, 9).getValues();
+  const staffData = staffList
+    .getRange(FIRST_DATA_ROW, 1, staffLastRow - FIRST_DATA_ROW + 1, 9)
+    .getValues();
 
   // Group by division
   const divisions = {};
@@ -1512,7 +1679,7 @@ function getDivisionData() {
         totalUsage: 0,
         totalActiveDays: 0,
         priorityBreakdown: { High: 0, Medium: 0, Low: 0, Zero: 0 },
-        users: []
+        users: [],
       };
     }
 
@@ -1546,19 +1713,17 @@ function getDivisionData() {
       jobTitle: staffData[i][CHEAT_COLS.JOB_TITLE] || '',
       hasGeminiPro: geminiProUsers.has(email),
       priority: priority,
-      activeDays: activeDays
+      activeDays: activeDays,
     });
   }
 
   // Calculate averages and get top users
-  Object.keys(divisions).forEach(divName => {
+  Object.keys(divisions).forEach((divName) => {
     const div = divisions[divName];
     div.avgActiveDays = div.userCount > 0 ? Math.round(div.totalActiveDays / div.userCount) : 0;
 
     // Sort users by active days descending, take top 5
-    div.topUsers = div.users
-      .sort((a, b) => b.activeDays - a.activeDays)
-      .slice(0, 5);
+    div.topUsers = div.users.sort((a, b) => b.activeDays - a.activeDays).slice(0, 5);
   });
 
   Logger.log(`Division data retrieved for ${Object.keys(divisions).length} divisions`);
@@ -1594,14 +1759,16 @@ function getUserProfile(email) {
     activeDays: 0,
     services: {},
     servicesPriority: {},
-    divisionAvg: {}
+    divisionAvg: {},
   };
 
   // Find in staff_list
   if (staffList) {
     const staffLastRow = staffList.getLastRow();
     if (staffLastRow >= FIRST_DATA_ROW) {
-      const staffData = staffList.getRange(FIRST_DATA_ROW, 1, staffLastRow - FIRST_DATA_ROW + 1, 9).getValues();
+      const staffData = staffList
+        .getRange(FIRST_DATA_ROW, 1, staffLastRow - FIRST_DATA_ROW + 1, 9)
+        .getValues();
       for (let i = 0; i < staffData.length; i++) {
         if (normalizeEmail(staffData[i][CHEAT_COLS.EMAIL]) === normalizedEmail) {
           profile.name = staffData[i][CHEAT_COLS.FULL_NAME] || '';
@@ -1618,7 +1785,9 @@ function getUserProfile(email) {
   if (userList) {
     const userLastRow = userList.getLastRow();
     if (userLastRow >= FIRST_DATA_ROW) {
-      const userEmails = userList.getRange(FIRST_DATA_ROW, USER_COLS.EMAIL + 1, userLastRow - FIRST_DATA_ROW + 1, 1).getValues();
+      const userEmails = userList
+        .getRange(FIRST_DATA_ROW, USER_COLS.EMAIL + 1, userLastRow - FIRST_DATA_ROW + 1, 1)
+        .getValues();
       for (let i = 0; i < userEmails.length; i++) {
         if (normalizeEmail(userEmails[i][0]) === normalizedEmail) {
           profile.hasGeminiPro = true;
@@ -1632,7 +1801,9 @@ function getUserProfile(email) {
   if (usageCountsSheet) {
     const countsLastRow = usageCountsSheet.getLastRow();
     if (countsLastRow >= FIRST_DATA_ROW) {
-      const countsData = usageCountsSheet.getRange(FIRST_DATA_ROW, 1, countsLastRow - FIRST_DATA_ROW + 1, 10).getValues();
+      const countsData = usageCountsSheet
+        .getRange(FIRST_DATA_ROW, 1, countsLastRow - FIRST_DATA_ROW + 1, 10)
+        .getValues();
       for (let i = 0; i < countsData.length; i++) {
         if (normalizeEmail(countsData[i][USAGE_COLS.EMAIL]) === normalizedEmail) {
           profile.overallUsage = parseInt(countsData[i][USAGE_COLS.OVERALL_USAGE]) || 0;
@@ -1644,7 +1815,7 @@ function getUserProfile(email) {
             Slides: parseInt(countsData[i][USAGE_COLS.SLIDES]) || 0,
             Drive: parseInt(countsData[i][USAGE_COLS.DRIVE]) || 0,
             Meet: parseInt(countsData[i][USAGE_COLS.MEET]) || 0,
-            Gemini: parseInt(countsData[i][USAGE_COLS.GEMINI]) || 0
+            Gemini: parseInt(countsData[i][USAGE_COLS.GEMINI]) || 0,
           };
           break;
         }
@@ -1656,7 +1827,9 @@ function getUserProfile(email) {
   if (usagePrioritySheet) {
     const priorityLastRow = usagePrioritySheet.getLastRow();
     if (priorityLastRow >= FIRST_DATA_ROW) {
-      const priorityData = usagePrioritySheet.getRange(FIRST_DATA_ROW, 1, priorityLastRow - FIRST_DATA_ROW + 1, 10).getValues();
+      const priorityData = usagePrioritySheet
+        .getRange(FIRST_DATA_ROW, 1, priorityLastRow - FIRST_DATA_ROW + 1, 10)
+        .getValues();
       for (let i = 0; i < priorityData.length; i++) {
         if (normalizeEmail(priorityData[i][USAGE_COLS.EMAIL]) === normalizedEmail) {
           profile.overallPriority = priorityData[i][USAGE_COLS.OVERALL_USAGE] || 'Zero';
@@ -1667,7 +1840,7 @@ function getUserProfile(email) {
             Slides: priorityData[i][USAGE_COLS.SLIDES] || 'Zero',
             Drive: priorityData[i][USAGE_COLS.DRIVE] || 'Zero',
             Meet: priorityData[i][USAGE_COLS.MEET] || 'Zero',
-            Gemini: priorityData[i][USAGE_COLS.GEMINI] || 'Zero'
+            Gemini: priorityData[i][USAGE_COLS.GEMINI] || 'Zero',
           };
           break;
         }
@@ -1677,10 +1850,12 @@ function getUserProfile(email) {
 
   // Calculate division average for comparison
   if (profile.division && staffList && usageCountsSheet) {
-    const {usageCountsMap} = buildUsageLookupMaps(usageCountsSheet, usagePrioritySheet);
+    const { usageCountsMap } = buildUsageLookupMaps(usageCountsSheet, usagePrioritySheet);
     const staffLastRow = staffList.getLastRow();
     if (staffLastRow >= FIRST_DATA_ROW) {
-      const staffData = staffList.getRange(FIRST_DATA_ROW, 1, staffLastRow - FIRST_DATA_ROW + 1, 9).getValues();
+      const staffData = staffList
+        .getRange(FIRST_DATA_ROW, 1, staffLastRow - FIRST_DATA_ROW + 1, 9)
+        .getValues();
       let divCount = 0;
       let divTotalActiveDays = 0;
 
@@ -1696,7 +1871,7 @@ function getUserProfile(email) {
 
       profile.divisionAvg = {
         activeDays: divCount > 0 ? Math.round(divTotalActiveDays / divCount) : 0,
-        userCount: divCount
+        userCount: divCount,
       };
     }
   }

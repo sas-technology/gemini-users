@@ -1,0 +1,288 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Google Sans', 'Helvetica Neue', Arial, sans-serif;
+        background: #f8f9fa;
+        padding: 20px;
+        font-size: 14px;
+        color: #333;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        background: linear-gradient(135deg, #1a2d58 0%, #a0192a 100%);
+        border-radius: 8px;
+        margin-bottom: 16px;
+        color: white;
+      }
+
+      .header-title {
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .header-sub {
+        font-size: 11px;
+        opacity: 0.75;
+        margin-top: 1px;
+      }
+
+      /* Spinner */
+      .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        flex-shrink: 0;
+      }
+      .spinner.done {
+        display: none;
+      }
+
+      .check {
+        display: none;
+        width: 22px;
+        height: 22px;
+        flex-shrink: 0;
+      }
+      .check.done {
+        display: block;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Progress steps */
+      .steps {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 12px;
+      }
+
+      .step {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 9px 14px;
+        border-bottom: 1px solid #f0f0f0;
+        color: #aaa;
+        font-size: 13px;
+        transition:
+          color 0.2s,
+          background 0.1s;
+      }
+      .step:last-child {
+        border-bottom: none;
+      }
+
+      .step.active {
+        color: #1a2d58;
+        font-weight: 600;
+        background: #f0f4ff;
+      }
+      .step.done {
+        color: #009754;
+      }
+      .step.error {
+        color: #a0192a;
+      }
+
+      .step-icon {
+        font-size: 14px;
+        margin-top: 1px;
+        flex-shrink: 0;
+      }
+
+      /* Log area */
+      .log-box {
+        background: #1a1a2e;
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-family: 'Courier New', monospace;
+        font-size: 11.5px;
+        color: #c8d0e0;
+        max-height: 160px;
+        overflow-y: auto;
+        line-height: 1.6;
+        display: none;
+      }
+      .log-box.visible {
+        display: block;
+      }
+      .log-line.ok {
+        color: #5dde8c;
+      }
+      .log-line.err {
+        color: #ff7070;
+      }
+      .log-line.info {
+        color: #7ec8e3;
+      }
+
+      /* Footer */
+      .footer {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 12px;
+      }
+
+      .btn {
+        padding: 8px 22px;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-close {
+        background: #1a2d58;
+        color: white;
+        display: none;
+      }
+      .btn-close:hover {
+        background: #142247;
+      }
+      .btn-close.visible {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="spinner" id="headerSpinner"></div>
+      <svg
+        class="check"
+        id="headerCheck"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="white"
+        stroke-width="3"
+      >
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <div>
+        <div class="header-title" id="headerTitle">Running sync operations…</div>
+        <div class="header-sub" id="headerSub">Singapore American School</div>
+      </div>
+    </div>
+
+    <div class="steps" id="steps">
+      <div class="step" id="step-dupes">
+        <span class="step-icon">⏳</span>
+        <span>Detect &amp; highlight duplicate emails</span>
+      </div>
+      <div class="step" id="step-sync-staff">
+        <span class="step-icon">⏳</span>
+        <span>Sync pro user list from staff list</span>
+      </div>
+      <div class="step" id="step-sync-usage">
+        <span class="step-icon">⏳</span>
+        <span>Sync usage data to all sheets</span>
+      </div>
+      <div class="step" id="step-untracked">
+        <span class="step-icon">⏳</span>
+        <span>Update untracked users sheet</span>
+      </div>
+      <div class="step" id="step-colors">
+        <span class="step-icon">⏳</span>
+        <span>Apply usage colour coding</span>
+      </div>
+    </div>
+
+    <div class="log-box" id="logBox"></div>
+
+    <div class="footer">
+      <button class="btn btn-close" id="closeBtn" onclick="google.script.host.close()">
+        Close
+      </button>
+    </div>
+
+    <script>
+      var STEP_IDS = ['dupes', 'sync-staff', 'sync-usage', 'untracked', 'colors'];
+
+      function setStep(id, state) {
+        var el = document.getElementById('step-' + id);
+        if (!el) return;
+        el.className = 'step ' + state;
+        var icon = el.querySelector('.step-icon');
+        if (icon) {
+          icon.textContent =
+            state === 'active' ? '▶' : state === 'done' ? '✓' : state === 'error' ? '✗' : '⏳';
+        }
+      }
+
+      function addLog(text, type) {
+        var box = document.getElementById('logBox');
+        box.classList.add('visible');
+        var line = document.createElement('div');
+        line.className = 'log-line ' + (type || 'info');
+        var ts = new Date().toLocaleTimeString('en-SG', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        line.textContent = '[' + ts + '] ' + text;
+        box.appendChild(line);
+        box.scrollTop = box.scrollHeight;
+      }
+
+      function onSuccess(result) {
+        // Mark all steps done in sequence based on returned log
+        STEP_IDS.forEach(function (id) {
+          setStep(id, 'done');
+        });
+
+        if (result && result.log) {
+          result.log.forEach(function (entry) {
+            addLog(entry.message, entry.type);
+          });
+        }
+
+        // Mark all steps done
+        if (result && result.stepResults) {
+          result.stepResults.forEach(function (sr) {
+            setStep(sr.id, sr.ok ? 'done' : 'error');
+          });
+        }
+
+        var elapsed = result && result.elapsed ? ' in ' + result.elapsed + 's' : '';
+        document.getElementById('headerTitle').textContent = 'All operations complete' + elapsed;
+        document.getElementById('headerSpinner').classList.add('done');
+        document.getElementById('headerCheck').classList.add('done');
+        document.getElementById('closeBtn').classList.add('visible');
+      }
+
+      function onError(err) {
+        addLog('Error: ' + (err.message || err), 'err');
+        document.getElementById('headerTitle').textContent = 'Sync failed — see log below';
+        document.getElementById('headerSpinner').classList.add('done');
+        document.getElementById('closeBtn').classList.add('visible');
+      }
+
+      // Mark first step active immediately so the UI doesn't look frozen
+      setStep('dupes', 'active');
+
+      // Run the full sync on the server
+      google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onError).runFullSync();
+    </script>
+  </body>
+</html>
