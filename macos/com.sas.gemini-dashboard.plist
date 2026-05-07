@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.sas.gemini-dashboard</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/docker</string>
+    <string>compose</string>
+    <string>--project-directory</string>
+    <string>INSTALL_DIR_PLACEHOLDER</string>
+    <string>up</string>
+    <string>-d</string>
+  </array>
+
+  <!-- Start automatically when the user logs in -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Restart if docker compose exits unexpectedly -->
+  <key>KeepAlive</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/sas-gemini-dashboard.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/tmp/sas-gemini-dashboard.log</string>
+</dict>
+</plist>
