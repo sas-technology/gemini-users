@@ -247,4 +247,4 @@ On merge to `main`, `publish.yml` builds and pushes the Docker image to `ghcr.io
 | Auth             | Cookie-based (`DASHBOARD_SECRET`, 8 h session)    |
 | Deployment       | Docker — Node 24 Alpine, `@sveltejs/adapter-node` |
 | Tests            | Vitest 4                                          |
-| Linting          | ESLint 9 (flat config), Prettier 3                |
+| Linting          | ESLint 10 (flat config), Prettier 3               |
