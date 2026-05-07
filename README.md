@@ -1,25 +1,36 @@
 # SAS Gemini Usage Tracker
 
-Tracks and visualises Google Gemini AI usage across Singapore American School. The system has two parts: a Google Apps Script project that processes data in a Google Spreadsheet, and a self-hosted Next.js dashboard that displays analytics.
+Tracks and visualises Google Gemini AI usage across Singapore American School. The system has two parts: a Google Apps Script project that processes data in a Google Spreadsheet, and a self-hosted SvelteKit dashboard that displays analytics.
 
 ## Overview
 
 ```text
-Google Spreadsheet  ──►  Apps Script (sync + JSON API)  ──►  Next.js Dashboard
-    (source data)                                               (Docker, port 3000)
+Google Spreadsheet  ──►  Apps Script (sync + JSON API)  ──►  SvelteKit Dashboard
+    (source data)              (no database)                   (Docker, port 3000)
 ```
 
 - Staff and student data is exported into the spreadsheet by admins
 - Apps Script syncs and merges data across 7 sheet tabs on demand
-- The Next.js app fetches data from the Apps Script JSON API and renders charts
-- If the Next.js app is unavailable, a built-in fallback dashboard is served directly from Apps Script
+- The dashboard fetches data from the Apps Script JSON API on each request (5-minute cache)
+- **No database** — Google Sheets is the single source of truth; the Docker image is stateless
+- If the dashboard is unavailable, a built-in fallback dashboard is served directly from Apps Script
+
+## Quick install (recommended)
+
+Once the Apps Script is deployed (Part 1 below), run this on any machine with Docker:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sas-technology/gemini-users/main/install.sh | bash
+```
+
+The script checks for Docker, prompts for your three credentials, writes `.env`, pulls the pre-built image from `ghcr.io`, and starts the container. No repository clone needed.
 
 ## Prerequisites
 
-- **Node.js 24+** and npm
 - **Docker** (for production deployment)
 - **Google Workspace admin access** to the SAS domain
 - **Google Apps Script CLI** (`clasp`) for deploying script changes
+- **Node.js 24+** and npm (only for local development)
 
 ---
 
@@ -56,7 +67,7 @@ In the Apps Script editor:
 2. Open **Script Properties**
 3. Add a property: `API_KEY` = a long random secret (e.g. output of `openssl rand -hex 32`)
 
-Keep this value — you'll need it in the Next.js `.env`.
+Keep this value — you'll need it in Step 2 of the quick install.
 
 ### 5. Deploy as a Web App
 
@@ -68,7 +79,7 @@ In the Apps Script editor:
 4. Set **Who has access**: Anyone with Google Account
 5. Click **Deploy** and copy the Web App URL
 
-Keep this URL — you'll need it in the Next.js `.env`.
+Keep this URL — you'll need it in Step 2 of the quick install.
 
 ### 6. Set up the spreadsheet menu
 
@@ -92,44 +103,26 @@ Two dashboard implementations are available. Both expose the same pages and requ
 
 ### Option A: SvelteKit (recommended for Docker/self-hosted)
 
-#### 1. Clone and enter the app directory
+#### Automatic (recommended)
+
+Run the installer — no repository clone needed:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sas-technology/gemini-users/main/install.sh | bash
+```
+
+The script will prompt for your credentials, pull the pre-built image from `ghcr.io`, and start the container.
+
+#### Manual
 
 ```bash
 git clone https://github.com/sas-technology/gemini-users.git
 cd gemini-users/sveltekit-app
-```
-
-#### 2. Create the environment file
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and fill in the values:
-
-```bash
-# Password to log in to the dashboard
-DASHBOARD_SECRET=choose-a-strong-password
-
-# From Step 5 of the Apps Script setup above
-APPS_SCRIPT_URL=https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec
-
-# From Step 4 of the Apps Script setup above
-APPS_SCRIPT_API_KEY=your-api-key
-
-# Required by SvelteKit for CSRF protection — set to your public URL
-ORIGIN=http://localhost:3000
-```
-
-#### 3. Start the container
-
-```bash
+cp .env.example .env   # then edit .env with your values
 docker compose up -d
 ```
 
-The dashboard will be available at **`http://localhost:3000`**.
-
-#### 4. Verify it's running
+#### Verify it's running
 
 ```bash
 curl http://localhost:3000/api/health

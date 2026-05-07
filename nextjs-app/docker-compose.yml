@@ -1,5 +1,6 @@
 services:
   sas-dashboard:
+    image: ghcr.io/sas-technology/gemini-users/nextjs:latest
     build:
       context: .
       dockerfile: Dockerfile
