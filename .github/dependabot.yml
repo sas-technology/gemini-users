@@ -12,9 +12,9 @@ updates:
     labels:
       - dependencies
 
-  # Next.js dashboard
+  # SvelteKit dashboard
   - package-ecosystem: npm
-    directory: /nextjs-app
+    directory: /sveltekit-app
     schedule:
       interval: weekly
       day: monday
@@ -22,21 +22,19 @@ updates:
       timezone: Asia/Singapore
     open-pull-requests-limit: 10
     groups:
-      next-ecosystem:
+      svelte-ecosystem:
         patterns:
-          - 'next'
-          - 'react'
-          - 'react-dom'
-          - '@types/react*'
+          - 'svelte'
+          - '@sveltejs/*'
       eslint:
         patterns:
           - 'eslint*'
           - '@eslint*'
+          - '@typescript-eslint*'
       testing:
         patterns:
           - 'vitest'
           - '@vitest*'
-          - '@vitejs*'
     labels:
       - dependencies
 

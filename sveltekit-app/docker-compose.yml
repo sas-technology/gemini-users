@@ -1,0 +1,18 @@
+services:
+  sveltekit-dashboard:
+    image: ghcr.io/sas-technology/gemini-users:latest
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      - DASHBOARD_SECRET=${DASHBOARD_SECRET}
+      - APPS_SCRIPT_URL=${APPS_SCRIPT_URL}
+      - APPS_SCRIPT_API_KEY=${APPS_SCRIPT_API_KEY}
+      - ORIGIN=${ORIGIN}
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

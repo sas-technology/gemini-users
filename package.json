@@ -8,11 +8,11 @@
     "prepare": "husky",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "markdownlint": "markdownlint '**/*.md' --ignore node_modules --ignore nextjs-app/node_modules"
+    "markdownlint": "markdownlint '**/*.md' --ignore node_modules --ignore sveltekit-app/node_modules"
   },
   "devDependencies": {
     "husky": "^9.1.7",
-    "lint-staged": "^15.3.0",
+    "lint-staged": "^17.0.2",
     "markdownlint-cli": "^0.48.0",
     "prettier": "^3.4.2"
   },

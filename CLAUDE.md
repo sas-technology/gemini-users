@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Google Workspace Apps Script project that manages and tracks Gemini AI usage across Singapore American School (SAS). It syncs staff/student data across multiple Google Sheets tabs and exposes a JSON API consumed by a self-hosted Next.js dashboard.
+Google Workspace Apps Script project that manages and tracks Gemini AI usage across Singapore American School (SAS). It syncs staff/student data across multiple Google Sheets tabs and exposes a JSON API consumed by a self-hosted SvelteKit dashboard.
 
 ## Repository Structure
 
@@ -13,9 +13,10 @@ Google Workspace Apps Script project that manages and tracks Gemini AI usage acr
 ├── Code.js               # Sheet processing, sync logic, menu
 ├── WebApp.js             # JSON API + fallback HTML dashboard
 ├── Progress.html         # Modal shown while sync scripts run
-├── Fallback.html         # Emergency read-only dashboard (if Next.js is down)
+├── Fallback.html         # Emergency read-only dashboard (if SvelteKit is down)
 ├── appsscript.json       # Apps Script runtime config
-└── nextjs-app/           # Self-hosted analytics dashboard (Next.js 15)
+├── install.sh            # One-command setup script
+└── sveltekit-app/        # Self-hosted analytics dashboard (SvelteKit 2 + Svelte 5)
 ```
 
 ## Apps Script Development
@@ -37,8 +38,8 @@ The Apps Script runtime is V8, Asia/Singapore timezone, Stackdriver logging. No 
 
 - **Code.js** — All sheet logic: menu creation, auto-sync triggers, data synchronisation, and the `runFullSync()` function called by `Progress.html`
 - **WebApp.js** — Dual-mode `doGet` handler:
-  - JSON API mode (`?format=json&key=KEY&endpoint=...`) — consumed by the Next.js app
-  - Fallback HTML dashboard — rendered when Next.js is unavailable
+  - JSON API mode (`?format=json&key=KEY&endpoint=...`) — consumed by the SvelteKit app
+  - Fallback HTML dashboard — rendered when SvelteKit is unavailable
 - **Progress.html** — SAS-branded modal dialog; calls `runFullSync()` via `google.script.run` and displays a live log
 - **Fallback.html** — Read-only emergency dashboard with stats grid, division cards, and filterable user table
 
@@ -50,7 +51,7 @@ The system operates on a single Google Spreadsheet with 7 sheet tabs. Data flows
 2. **`syncUserListFromCheatsheet()`** copies staff data → `pro_user_list`
 3. **`syncUsageDataToAllSheets()`** merges usage data into all target sheets by email-based lookup
 4. **`updateUntrackedUsersSheet()`** identifies emails in usage data not found in any known list
-5. **Next.js app** calls `/api/usage`, `/api/students`, `/api/divisions` → Next.js API routes → `WebApp.js` JSON API → sheet data
+5. **SvelteKit app** calls `/api/usage`, `/api/students`, `/api/divisions` → SvelteKit server routes → `WebApp.js` JSON API → sheet data
 
 ### Key Patterns
 
@@ -60,7 +61,7 @@ The system operates on a single Google Spreadsheet with 7 sheet tabs. Data flows
 - **Batch read/write** — all sheet operations use `getRange().getValues()` / `setValues()` for performance. Avoid cell-by-cell reads.
 - **Auto-sync on edit** — `onEdit(e)` triggers sync when specific sheets are modified.
 - **Toast messages** for user-facing status; `Logger` for debug output.
-- **API key auth** — `WebApp.js` reads `API_KEY` from Script Properties; the same value goes in the Next.js `.env` as `APPS_SCRIPT_API_KEY`.
+- **API key auth** — `WebApp.js` reads `API_KEY` from Script Properties; the same value goes in the SvelteKit `.env` as `APPS_SCRIPT_API_KEY`.
 
 ### Sheet Tab Schema
 
@@ -74,9 +75,13 @@ The system operates on a single Google Spreadsheet with 7 sheet tabs. Data flows
 | `student_no_gemini_access` | Students without Gemini                      | Same structure                                         |
 | `untracked_users`          | Auto-generated: unknown emails in usage data | EMAIL, USAGE_PRIORITY, OVERALL_USAGE                   |
 
-## Next.js App (`nextjs-app/`)
+## SvelteKit App (`sveltekit-app/`)
 
-See [`nextjs-app/README.md`](nextjs-app/README.md) for full setup, environment variables, and deployment instructions.
+SvelteKit 2 + Svelte 5 dashboard. Deployed as a Docker container via `@sveltejs/adapter-node`.
+
+- **No database** — all data fetched from the Apps Script JSON API on each request with a 5-minute in-memory cache
+- Data loads server-side (`+page.server.ts`) — no client-side loading spinners
+- Auth via `hooks.server.ts` — cookie session validated on every request
 
 ### SAS Brand Reference
 
@@ -86,12 +91,12 @@ See [`nextjs-app/README.md`](nextjs-app/README.md) for full setup, environment v
 
 ## Dev Tooling
 
-| Tool           | Config                         | Run                                  |
-| -------------- | ------------------------------ | ------------------------------------ |
-| Prettier       | `.prettierrc`                  | `npm run format`                     |
-| markdownlint   | `.markdownlint.json`           | `npm run markdownlint`               |
-| Husky          | `.husky/pre-commit`            | Auto on `git commit`                 |
-| ESLint         | `nextjs-app/eslint.config.mjs` | `cd nextjs-app && npm run lint`      |
-| TypeScript     | `nextjs-app/tsconfig.json`     | `cd nextjs-app && npm run typecheck` |
-| Vitest         | `nextjs-app/vitest.config.ts`  | `cd nextjs-app && npm test`          |
-| GitHub Actions | `.github/workflows/ci.yml`     | Auto on push/PR                      |
+| Tool           | Config                           | Run                                     |
+| -------------- | -------------------------------- | --------------------------------------- |
+| Prettier       | `.prettierrc`                    | `npm run format`                        |
+| markdownlint   | `.markdownlint.json`             | `npm run markdownlint`                  |
+| Husky          | `.husky/pre-commit`              | Auto on `git commit`                    |
+| ESLint         | `sveltekit-app/eslint.config.js` | `cd sveltekit-app && npm run lint`      |
+| TypeScript     | `sveltekit-app/tsconfig.json`    | `cd sveltekit-app && npm run typecheck` |
+| Vitest         | `sveltekit-app/vitest.config.ts` | `cd sveltekit-app && npm run test:run`  |
+| GitHub Actions | `.github/workflows/ci.yml`       | Auto on push/PR                         |
