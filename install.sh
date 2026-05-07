@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# install.sh — one-command setup for the SAS Gemini Dashboard (SvelteKit)
-# Usage: curl -fsSL https://raw.githubusercontent.com/sas-technology/gemini-users/main/install.sh | bash
+# install.sh — one-command setup for the SAS Gemini Dashboard
+# Run from the cloned repo: bash install.sh
+# Or if the repo is public: curl -fsSL https://raw.githubusercontent.com/sas-technology/gemini-users/main/install.sh | bash
 set -euo pipefail
 
-REPO="sas-technology/gemini-users"
-IMAGE="ghcr.io/${REPO}/sveltekit"
-COMPOSE_URL="https://raw.githubusercontent.com/${REPO}/main/sveltekit-app/docker-compose.yml"
+IMAGE="ghcr.io/sas-technology/gemini-users:latest"
 
 BOLD='\033[1m'
 GREEN='\033[0;32m'
@@ -43,7 +42,7 @@ cd "$INSTALL_DIR"
 echo ""
 echo -e "${BOLD}Configuration${RESET}"
 echo "You'll need the Apps Script Web App URL and API key from Part 1 of the setup."
-echo "See https://github.com/${REPO}#part-1--apps-script-setup for details."
+echo "See https://github.com/sas-technology/gemini-users#part-1--apps-script-setup"
 echo ""
 
 # ── Collect credentials ────────────────────────────────────────────────────────
@@ -80,19 +79,31 @@ EOF
 chmod 600 .env
 echo -e "${GREEN}✓ .env written${RESET}"
 
-# ── Fetch docker-compose.yml ───────────────────────────────────────────────────
-if [[ ! -f docker-compose.yml ]]; then
-  if command -v curl &>/dev/null; then
-    curl -fsSL "$COMPOSE_URL" -o docker-compose.yml
-  else
-    wget -qO docker-compose.yml "$COMPOSE_URL"
-  fi
-  echo -e "${GREEN}✓ docker-compose.yml downloaded${RESET}"
-fi
+# ── Write docker-compose.yml ───────────────────────────────────────────────────
+cat > docker-compose.yml <<'COMPOSE'
+services:
+  sas-gemini:
+    image: ghcr.io/sas-technology/gemini-users:latest
+    ports:
+      - '3000:3000'
+    environment:
+      - DASHBOARD_SECRET=${DASHBOARD_SECRET}
+      - APPS_SCRIPT_URL=${APPS_SCRIPT_URL}
+      - APPS_SCRIPT_API_KEY=${APPS_SCRIPT_API_KEY}
+      - ORIGIN=${ORIGIN}
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+COMPOSE
+echo -e "${GREEN}✓ docker-compose.yml written${RESET}"
 
 # ── Pull image and start ───────────────────────────────────────────────────────
 echo ""
-echo "Pulling image ${IMAGE}:latest …"
+echo "Pulling image ${IMAGE} …"
 docker compose pull
 
 echo ""
@@ -118,7 +129,7 @@ echo ""
 echo -e "  Dashboard → ${GREEN}${ORIGIN}${RESET}"
 echo "  Log in with the password you just set."
 echo ""
-echo "Useful commands:"
-echo "  docker compose logs -f     # View live logs"
-echo "  docker compose pull && docker compose up -d   # Update to latest"
-echo "  docker compose down        # Stop"
+echo "Useful commands (run from $INSTALL_DIR):"
+echo "  docker compose logs -f"
+echo "  docker compose pull && docker compose up -d   # update to latest"
+echo "  docker compose down"
