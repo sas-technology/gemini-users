@@ -1,0 +1,1 @@
+import{B as y,e as u,H as _,C as o,l as t,F as g,G as l,J as i,K as d,M as p,O as m}from"./BW341vsq.js";function C(n,r){let s=null,E=t;var a;if(t){s=p;for(var e=m(document.head);e!==null&&(e.nodeType!==g||e.data!==n);)e=l(e);if(e===null)i(!1);else{var f=l(e);e.remove(),d(f)}}t||(a=document.head.appendChild(y()));try{u(()=>r(a),_|o)}finally{E&&(i(!0),d(s))}}export{C as h};

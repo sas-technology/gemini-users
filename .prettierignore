@@ -2,4 +2,5 @@ node_modules
 .next
 nextjs-app/.next
 nextjs-app/node_modules
+sveltekit-app
 .clasp

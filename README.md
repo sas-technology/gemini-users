@@ -76,11 +76,71 @@ Open the bound spreadsheet. A **SAS Gemini** menu should appear in the toolbar. 
 
 ---
 
-## Part 2 — Next.js dashboard
+## Part 2 — Dashboard
 
-### Option A: Docker (recommended for production)
+Two dashboard implementations are available. Both expose the same pages and require the same environment variables. Choose whichever fits your workflow.
 
-#### 1. Clone the repo and enter the app directory
+|                   | SvelteKit (`sveltekit-app/`)      | Next.js (`nextjs-app/`)  |
+| ----------------- | --------------------------------- | ------------------------ |
+| Framework         | SvelteKit 2 + Svelte 5            | Next.js 15 + React 19    |
+| Runtime           | Node.js (adapter-node)            | Node.js (standalone)     |
+| Docker image size | Smaller                           | Larger                   |
+| Data loading      | Server-side (no loading spinners) | Client-side fetch        |
+| Recommended for   | Self-hosted Docker                | Vercel / cloud platforms |
+
+---
+
+### Option A: SvelteKit (recommended for Docker/self-hosted)
+
+#### 1. Clone and enter the app directory
+
+```bash
+git clone https://github.com/sas-technology/gemini-users.git
+cd gemini-users/sveltekit-app
+```
+
+#### 2. Create the environment file
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and fill in the values:
+
+```bash
+# Password to log in to the dashboard
+DASHBOARD_SECRET=choose-a-strong-password
+
+# From Step 5 of the Apps Script setup above
+APPS_SCRIPT_URL=https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec
+
+# From Step 4 of the Apps Script setup above
+APPS_SCRIPT_API_KEY=your-api-key
+
+# Required by SvelteKit for CSRF protection — set to your public URL
+ORIGIN=http://localhost:3000
+```
+
+#### 3. Start the container
+
+```bash
+docker compose up -d
+```
+
+The dashboard will be available at **`http://localhost:3000`**.
+
+#### 4. Verify it's running
+
+```bash
+curl http://localhost:3000/api/health
+# → {"status":"ok"}
+```
+
+---
+
+### Option B: Next.js
+
+#### 1. Clone and enter the app directory
 
 ```bash
 git clone https://github.com/sas-technology/gemini-users.git
@@ -93,18 +153,7 @@ cd gemini-users/nextjs-app
 cp .env.example .env
 ```
 
-Edit `.env` and fill in all three values:
-
-```bash
-# Password to log in to the dashboard
-DASHBOARD_SECRET=choose-a-strong-password
-
-# From Step 5 of the Apps Script setup above
-APPS_SCRIPT_URL=https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec
-
-# From Step 4 of the Apps Script setup above
-APPS_SCRIPT_API_KEY=your-api-key
-```
+Edit `.env` with the same three values as above (no `ORIGIN` needed).
 
 #### 3. Start the container
 
@@ -112,7 +161,7 @@ APPS_SCRIPT_API_KEY=your-api-key
 docker compose up -d
 ```
 
-The dashboard will be available at **`http://localhost:3000`** (or your server's IP/hostname).
+The dashboard will be available at **`http://localhost:3000`**.
 
 #### 4. Verify it's running
 
@@ -123,15 +172,18 @@ curl http://localhost:3000/api/health
 
 ---
 
-### Option B: Local development
+### Local development (either app)
 
 ```bash
-git clone https://github.com/sas-technology/gemini-users.git
-cd gemini-users/nextjs-app
+# SvelteKit
+cd gemini-users/sveltekit-app
+npm install && cp .env.example .env
+npm run dev    # http://localhost:5173
 
-npm install
-cp .env.example .env   # fill in values as above
-npm run dev            # http://localhost:3000
+# Next.js
+cd gemini-users/nextjs-app
+npm install && cp .env.example .env
+npm run dev    # http://localhost:3000
 ```
 
 ---
@@ -202,7 +254,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions and PR process.
 ├── Progress.html          # Modal shown while sync scripts run
 ├── Fallback.html          # Emergency read-only dashboard
 ├── appsscript.json        # Apps Script runtime config (V8, SGT)
-├── nextjs-app/
+├── sveltekit-app/         # SvelteKit dashboard (recommended)
+│   ├── src/
+│   │   ├── lib/           # Types, cache, auth, sheets API client
+│   │   ├── routes/        # SvelteKit file-based routes + API endpoints
+│   │   └── hooks.server.ts # Auth middleware
+│   ├── Dockerfile         # Multi-stage Node 24 Alpine build
+│   ├── docker-compose.yml
+│   └── .env.example
+├── nextjs-app/            # Next.js dashboard (alternative)
 │   ├── src/
 │   │   ├── app/           # Next.js App Router pages and API routes
 │   │   ├── components/    # React client components (charts, tables)
@@ -210,9 +270,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions and PR process.
 │   │   └── types/         # Shared TypeScript interfaces
 │   ├── Dockerfile         # Multi-stage Node 24 Alpine build
 │   ├── docker-compose.yml
-│   └── .env.example       # Environment variable template
+│   └── .env.example
 ├── .github/
-│   ├── workflows/ci.yml   # 5-level CI pipeline
+│   ├── workflows/ci.yml   # 5-level CI pipeline (covers both apps)
 │   ├── dependabot.yml     # Automated dependency updates
 │   └── ISSUE_TEMPLATE/
 ├── CONTRIBUTING.md
@@ -225,25 +285,25 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions and PR process.
 
 GitHub Actions runs on every push and pull request to `main`. Jobs run in dependency order — nothing downstream runs if something upstream fails.
 
-| Level | Job                            | Gate                   |
-| ----- | ------------------------------ | ---------------------- |
-| 1     | `format-root`, `format-nextjs` | Prettier + `npm audit` |
-| 2     | `typecheck`, `lint`            | Needs Level 1          |
-| 3     | `test`                         | Needs `typecheck`      |
-| 4     | `build`                        | Needs `lint` + `test`  |
-| 5     | `docker`                       | Needs `build`          |
+| Level | Jobs                                               | Gate                   |
+| ----- | -------------------------------------------------- | ---------------------- |
+| 1     | `format-root`, `format-nextjs`, `format-sveltekit` | Prettier + `npm audit` |
+| 2     | `typecheck-{next,svelte}`, `lint-{next,svelte}`    | Needs Level 1          |
+| 3     | `test-nextjs`, `test-sveltekit`                    | Needs typecheck        |
+| 4     | `build-nextjs`, `build-sveltekit`                  | Needs lint + test      |
+| 5     | `docker-nextjs`, `docker-sveltekit`                | Needs build            |
 
 ---
 
 ## Technology
 
-| Layer            | Stack                                              |
-| ---------------- | -------------------------------------------------- |
-| Sheet processing | Google Apps Script (V8 runtime)                    |
-| Data API         | Apps Script `doGet` with API key auth              |
-| Dashboard        | Next.js 15, React 19, TypeScript, Tailwind CSS     |
-| Charts           | Chart.js 4 via react-chartjs-2                     |
-| Auth             | Cookie-based (`DASHBOARD_SECRET`, 8 h session)     |
-| Deployment       | Docker — Node 24 Alpine, standalone Next.js output |
-| Tests            | Vitest 4                                           |
-| Linting          | ESLint 9 (flat config), Prettier 3                 |
+| Layer            | Stack                                                                    |
+| ---------------- | ------------------------------------------------------------------------ |
+| Sheet processing | Google Apps Script (V8 runtime)                                          |
+| Data API         | Apps Script `doGet` with API key auth                                    |
+| Dashboard        | **SvelteKit 2 + Svelte 5** (recommended) or Next.js 15                   |
+| Charts           | Chart.js 4                                                               |
+| Auth             | Cookie-based (`DASHBOARD_SECRET`, 8 h session)                           |
+| Deployment       | Docker — Node 24 Alpine, adapter-node (SvelteKit) / standalone (Next.js) |
+| Tests            | Vitest 4                                                                 |
+| Linting          | ESLint 9 (flat config), Prettier 3                                       |

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, 'claude/**']
+    branches: [main, 'claude/**', 'feat/**', 'fix/**', 'chore/**']
   pull_request:
     branches: [main]
 
@@ -39,8 +39,25 @@ jobs:
       - run: npm audit --audit-level=moderate
       - run: npm run format:check
 
+  format-sveltekit:
+    name: Format · sveltekit-app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sveltekit-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: sveltekit-app/package-lock.json
+      - run: npm ci
+      - run: npm audit --audit-level=moderate
+      - run: npm run format:check
+
   # ── Level 2: Static analysis (requires clean formatting) ────────────────
-  typecheck:
+  typecheck-nextjs:
     name: Typecheck · nextjs-app
     needs: [format-root, format-nextjs]
     runs-on: ubuntu-latest
@@ -57,7 +74,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
 
-  lint:
+  lint-nextjs:
     name: Lint · nextjs-app
     needs: [format-root, format-nextjs]
     runs-on: ubuntu-latest
@@ -74,10 +91,44 @@ jobs:
       - run: npm ci
       - run: npm run lint
 
+  typecheck-sveltekit:
+    name: Typecheck · sveltekit-app
+    needs: [format-root, format-sveltekit]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sveltekit-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: sveltekit-app/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+
+  lint-sveltekit:
+    name: Lint · sveltekit-app
+    needs: [format-root, format-sveltekit]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sveltekit-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: sveltekit-app/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+
   # ── Level 3: Tests (requires types to be valid) ──────────────────────────
-  test:
+  test-nextjs:
     name: Test · nextjs-app
-    needs: [typecheck]
+    needs: [typecheck-nextjs]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -92,10 +143,27 @@ jobs:
       - run: npm ci
       - run: npm test -- --run
 
+  test-sveltekit:
+    name: Test · sveltekit-app
+    needs: [typecheck-sveltekit]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sveltekit-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: sveltekit-app/package-lock.json
+      - run: npm ci
+      - run: npm run test:run
+
   # ── Level 4: Build (requires lint + tests to pass) ───────────────────────
-  build:
+  build-nextjs:
     name: Build · nextjs-app
-    needs: [lint, test]
+    needs: [lint-nextjs, test-nextjs]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -114,12 +182,43 @@ jobs:
           APPS_SCRIPT_URL: https://example.com
           APPS_SCRIPT_API_KEY: ci-key
 
-  # ── Level 5: Docker (requires successful Next.js build) ──────────────────
-  docker:
-    name: Docker build
-    needs: [build]
+  build-sveltekit:
+    name: Build · sveltekit-app
+    needs: [lint-sveltekit, test-sveltekit]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sveltekit-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: sveltekit-app/package-lock.json
+      - run: npm ci
+      - run: npm run build
+        env:
+          DASHBOARD_SECRET: ci-secret
+          APPS_SCRIPT_URL: https://example.com
+          APPS_SCRIPT_API_KEY: ci-key
+          ORIGIN: http://localhost:3000
+
+  # ── Level 5: Docker (requires successful builds) ─────────────────────────
+  docker-nextjs:
+    name: Docker · nextjs-app
+    needs: [build-nextjs]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - run: docker build -t sas-gemini-dashboard ./nextjs-app
+      - run: docker build -t sas-gemini-dashboard-nextjs ./nextjs-app
+
+  docker-sveltekit:
+    name: Docker · sveltekit-app
+    needs: [build-sveltekit]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - run: docker build -t sas-gemini-dashboard-sveltekit ./sveltekit-app

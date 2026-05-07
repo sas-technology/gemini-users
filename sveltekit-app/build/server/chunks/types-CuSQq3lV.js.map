@@ -1,0 +1,1 @@
+{"version":3,"file":"types-CuSQq3lV.js","sources":["../../../.svelte-kit/adapter-node/chunks/types.js"],"sourcesContent":["const SERVICES = [\"Gmail\", \"Docs\", \"Sheets\", \"Slides\", \"Drive\", \"Meet\", \"Gemini\"];\nexport {\n  SERVICES as S\n};\n"],"names":[],"mappings":"AAAK,MAAC,QAAQ,GAAG,CAAC,OAAO,EAAE,MAAM,EAAE,QAAQ,EAAE,QAAQ,EAAE,OAAO,EAAE,MAAM,EAAE,QAAQ;;;;"}
