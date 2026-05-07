@@ -30,11 +30,11 @@ Run these before pushing — CI will fail on any of them:
 npm run format:check
 npm run markdownlint
 
-# Next.js app (from nextjs-app/)
+# sveltekit-app (from sveltekit-app/)
 npm run typecheck
 npm run lint
 npm run format:check
-npm test -- --run
+npm run test:run
 npm run build
 ```
 

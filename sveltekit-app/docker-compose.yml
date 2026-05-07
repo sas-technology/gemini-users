@@ -1,6 +1,6 @@
 services:
   sveltekit-dashboard:
-    image: ghcr.io/sas-technology/gemini-users/sveltekit:latest
+    image: ghcr.io/sas-technology/gemini-users:latest
     build: .
     ports:
       - '3000:3000'

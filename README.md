@@ -15,7 +15,7 @@ Google Spreadsheet  ──►  Apps Script (sync + JSON API)  ──►  SvelteK
 - **No database** — Google Sheets is the single source of truth; the Docker image is stateless
 - If the dashboard is unavailable, a built-in fallback dashboard is served directly from Apps Script
 
-## Quick install (recommended)
+## Quick install
 
 Once the Apps Script is deployed (Part 1 below), run this on any machine with Docker:
 
@@ -23,7 +23,7 @@ Once the Apps Script is deployed (Part 1 below), run this on any machine with Do
 curl -fsSL https://raw.githubusercontent.com/sas-technology/gemini-users/main/install.sh | bash
 ```
 
-The script checks for Docker, prompts for your three credentials, writes `.env`, pulls the pre-built image from `ghcr.io`, and starts the container. No repository clone needed.
+The script checks for Docker, prompts for your credentials, writes `.env`, pulls the pre-built image from `ghcr.io`, and starts the container. No repository clone needed.
 
 ## Prerequisites
 
@@ -89,31 +89,15 @@ Open the bound spreadsheet. A **SAS Gemini** menu should appear in the toolbar. 
 
 ## Part 2 — Dashboard
 
-Two dashboard implementations are available. Both expose the same pages and require the same environment variables. Choose whichever fits your workflow.
-
-|                   | SvelteKit (`sveltekit-app/`)      | Next.js (`nextjs-app/`)  |
-| ----------------- | --------------------------------- | ------------------------ |
-| Framework         | SvelteKit 2 + Svelte 5            | Next.js 15 + React 19    |
-| Runtime           | Node.js (adapter-node)            | Node.js (standalone)     |
-| Docker image size | Smaller                           | Larger                   |
-| Data loading      | Server-side (no loading spinners) | Client-side fetch        |
-| Recommended for   | Self-hosted Docker                | Vercel / cloud platforms |
-
----
-
-### Option A: SvelteKit (recommended for Docker/self-hosted)
-
-#### Automatic (recommended)
-
-Run the installer — no repository clone needed:
+### Quick install (recommended)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sas-technology/gemini-users/main/install.sh | bash
 ```
 
-The script will prompt for your credentials, pull the pre-built image from `ghcr.io`, and start the container.
+The script prompts for your credentials, pulls the pre-built image from `ghcr.io`, and starts the container.
 
-#### Manual
+### Manual install
 
 ```bash
 git clone https://github.com/sas-technology/gemini-users.git
@@ -122,61 +106,28 @@ cp .env.example .env   # then edit .env with your values
 docker compose up -d
 ```
 
-#### Verify it's running
+### Environment variables
+
+| Variable              | Description                                                  |
+| --------------------- | ------------------------------------------------------------ |
+| `DASHBOARD_SECRET`    | Password users log in with                                   |
+| `APPS_SCRIPT_URL`     | Web App URL from Step 5 above                                |
+| `APPS_SCRIPT_API_KEY` | API key from Step 4 above                                    |
+| `ORIGIN`              | Public URL of this server (e.g. `https://gemini.sas.edu.sg`) |
+
+### Verify it's running
 
 ```bash
 curl http://localhost:3000/api/health
 # → {"status":"ok"}
 ```
 
----
-
-### Option B: Next.js
-
-#### 1. Clone and enter the app directory
+### Local development
 
 ```bash
-git clone https://github.com/sas-technology/gemini-users.git
-cd gemini-users/nextjs-app
-```
-
-#### 2. Create the environment file
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with the same three values as above (no `ORIGIN` needed).
-
-#### 3. Start the container
-
-```bash
-docker compose up -d
-```
-
-The dashboard will be available at **`http://localhost:3000`**.
-
-#### 4. Verify it's running
-
-```bash
-curl http://localhost:3000/api/health
-# → {"status":"ok"}
-```
-
----
-
-### Local development (either app)
-
-```bash
-# SvelteKit
-cd gemini-users/sveltekit-app
+cd sveltekit-app
 npm install && cp .env.example .env
 npm run dev    # http://localhost:5173
-
-# Next.js
-cd gemini-users/nextjs-app
-npm install && cp .env.example .env
-npm run dev    # http://localhost:3000
 ```
 
 ---
@@ -224,11 +175,11 @@ npm run format          # Format all files with Prettier
 npm run format:check    # Check formatting (run by CI)
 npm run markdownlint    # Lint all markdown files
 
-# Next.js app (run from nextjs-app/)
-npm run dev             # Dev server
-npm run typecheck       # TypeScript type check
+# sveltekit-app (run from sveltekit-app/)
+npm run dev             # Dev server (http://localhost:5173)
+npm run typecheck       # TypeScript + Svelte type check
 npm run lint            # ESLint
-npm test -- --run       # Run unit tests once
+npm run test:run        # Run unit tests once
 npm run build           # Production build
 ```
 
@@ -247,26 +198,19 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions and PR process.
 ├── Progress.html          # Modal shown while sync scripts run
 ├── Fallback.html          # Emergency read-only dashboard
 ├── appsscript.json        # Apps Script runtime config (V8, SGT)
-├── sveltekit-app/         # SvelteKit dashboard (recommended)
+├── install.sh             # One-command setup script
+├── sveltekit-app/         # SvelteKit dashboard
 │   ├── src/
 │   │   ├── lib/           # Types, cache, auth, sheets API client
-│   │   ├── routes/        # SvelteKit file-based routes + API endpoints
+│   │   ├── routes/        # File-based routes + API endpoints
 │   │   └── hooks.server.ts # Auth middleware
 │   ├── Dockerfile         # Multi-stage Node 24 Alpine build
 │   ├── docker-compose.yml
 │   └── .env.example
-├── nextjs-app/            # Next.js dashboard (alternative)
-│   ├── src/
-│   │   ├── app/           # Next.js App Router pages and API routes
-│   │   ├── components/    # React client components (charts, tables)
-│   │   ├── lib/           # Data fetching, auth, in-memory cache
-│   │   └── types/         # Shared TypeScript interfaces
-│   ├── Dockerfile         # Multi-stage Node 24 Alpine build
-│   ├── docker-compose.yml
-│   └── .env.example
 ├── .github/
-│   ├── workflows/ci.yml   # 5-level CI pipeline (covers both apps)
-│   ├── dependabot.yml     # Automated dependency updates
+│   ├── workflows/ci.yml      # 5-level CI pipeline
+│   ├── workflows/publish.yml # Publishes image to ghcr.io on merge to main
+│   ├── dependabot.yml        # Automated dependency updates
 │   └── ISSUE_TEMPLATE/
 ├── CONTRIBUTING.md
 └── SECURITY.md
@@ -278,25 +222,27 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions and PR process.
 
 GitHub Actions runs on every push and pull request to `main`. Jobs run in dependency order — nothing downstream runs if something upstream fails.
 
-| Level | Jobs                                               | Gate                   |
-| ----- | -------------------------------------------------- | ---------------------- |
-| 1     | `format-root`, `format-nextjs`, `format-sveltekit` | Prettier + `npm audit` |
-| 2     | `typecheck-{next,svelte}`, `lint-{next,svelte}`    | Needs Level 1          |
-| 3     | `test-nextjs`, `test-sveltekit`                    | Needs typecheck        |
-| 4     | `build-nextjs`, `build-sveltekit`                  | Needs lint + test      |
-| 5     | `docker-nextjs`, `docker-sveltekit`                | Needs build            |
+| Level | Jobs                                    | Gate                   |
+| ----- | --------------------------------------- | ---------------------- |
+| 1     | `format-root`, `format-sveltekit`       | Prettier + `npm audit` |
+| 2     | `typecheck-sveltekit`, `lint-sveltekit` | Needs Level 1          |
+| 3     | `test-sveltekit`                        | Needs typecheck        |
+| 4     | `build-sveltekit`                       | Needs lint + test      |
+| 5     | `docker-sveltekit`                      | Needs build            |
+
+On merge to `main`, `publish.yml` builds and pushes the Docker image to `ghcr.io`.
 
 ---
 
 ## Technology
 
-| Layer            | Stack                                                                    |
-| ---------------- | ------------------------------------------------------------------------ |
-| Sheet processing | Google Apps Script (V8 runtime)                                          |
-| Data API         | Apps Script `doGet` with API key auth                                    |
-| Dashboard        | **SvelteKit 2 + Svelte 5** (recommended) or Next.js 15                   |
-| Charts           | Chart.js 4                                                               |
-| Auth             | Cookie-based (`DASHBOARD_SECRET`, 8 h session)                           |
-| Deployment       | Docker — Node 24 Alpine, adapter-node (SvelteKit) / standalone (Next.js) |
-| Tests            | Vitest 4                                                                 |
-| Linting          | ESLint 9 (flat config), Prettier 3                                       |
+| Layer            | Stack                                             |
+| ---------------- | ------------------------------------------------- |
+| Sheet processing | Google Apps Script (V8 runtime)                   |
+| Data API         | Apps Script `doGet` with API key auth             |
+| Dashboard        | SvelteKit 2 + Svelte 5                            |
+| Charts           | Chart.js 4                                        |
+| Auth             | Cookie-based (`DASHBOARD_SECRET`, 8 h session)    |
+| Deployment       | Docker — Node 24 Alpine, `@sveltejs/adapter-node` |
+| Tests            | Vitest 4                                          |
+| Linting          | ESLint 9 (flat config), Prettier 3                |
