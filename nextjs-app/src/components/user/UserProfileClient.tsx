@@ -58,14 +58,11 @@ export default function UserProfileClient() {
   const params = useSearchParams();
   const email = params.get('email') ?? '';
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!email);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!email) {
-      setLoading(false);
-      return;
-    }
+    if (!email) return;
     fetch(`/api/user?email=${encodeURIComponent(email)}`)
       .then((r) => r.json())
       .then((data) => {
