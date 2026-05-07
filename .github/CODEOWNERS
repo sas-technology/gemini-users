@@ -1,0 +1,14 @@
+# Global owner — required reviewer on all PRs
+* @sas-technology/it-team
+
+# Apps Script source
+*.js @sas-technology/it-team
+*.html @sas-technology/it-team
+
+# Next.js dashboard
+/nextjs-app/ @sas-technology/it-team
+
+# CI and security-sensitive config — require explicit review
+/.github/ @sas-technology/it-team
+/nextjs-app/Dockerfile @sas-technology/it-team
+/nextjs-app/docker-compose.yml @sas-technology/it-team

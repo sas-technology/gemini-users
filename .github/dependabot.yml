@@ -1,0 +1,53 @@
+version: 2
+updates:
+  # Root — Prettier, Husky, markdownlint
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Singapore
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+
+  # Next.js dashboard
+  - package-ecosystem: npm
+    directory: /nextjs-app
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Singapore
+    open-pull-requests-limit: 10
+    groups:
+      next-ecosystem:
+        patterns:
+          - 'next'
+          - 'react'
+          - 'react-dom'
+          - '@types/react*'
+      eslint:
+        patterns:
+          - 'eslint*'
+          - '@eslint*'
+      testing:
+        patterns:
+          - 'vitest'
+          - '@vitest*'
+          - '@vitejs*'
+    labels:
+      - dependencies
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Singapore
+    labels:
+      - dependencies
+      - ci
