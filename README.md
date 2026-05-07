@@ -20,10 +20,11 @@ Google Spreadsheet  ──►  Apps Script (sync + JSON API)  ──►  SvelteK
 Once the Apps Script is deployed (Part 1 below), run this on any machine with Docker:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sas-technology/gemini-users/main/install.sh | bash
+git clone https://github.com/sas-technology/gemini-users.git
+bash gemini-users/install.sh
 ```
 
-The script checks for Docker, prompts for your credentials, writes `.env`, pulls the pre-built image from `ghcr.io`, and starts the container. No repository clone needed.
+The script prompts for your credentials, writes `.env`, pulls the pre-built image from `ghcr.io`, and starts the container.
 
 ## Prerequisites
 
@@ -92,7 +93,8 @@ Open the bound spreadsheet. A **SAS Gemini** menu should appear in the toolbar. 
 ### Quick install (recommended)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sas-technology/gemini-users/main/install.sh | bash
+git clone https://github.com/sas-technology/gemini-users.git
+bash gemini-users/install.sh
 ```
 
 The script prompts for your credentials, pulls the pre-built image from `ghcr.io`, and starts the container.
@@ -245,4 +247,4 @@ On merge to `main`, `publish.yml` builds and pushes the Docker image to `ghcr.io
 | Auth             | Cookie-based (`DASHBOARD_SECRET`, 8 h session)    |
 | Deployment       | Docker — Node 24 Alpine, `@sveltejs/adapter-node` |
 | Tests            | Vitest 4                                          |
-| Linting          | ESLint 9 (flat config), Prettier 3                |
+| Linting          | ESLint 10 (flat config), Prettier 3               |

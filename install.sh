@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# install.sh — one-command setup for the SAS Gemini Dashboard (SvelteKit)
-# Usage: curl -fsSL https://raw.githubusercontent.com/sas-technology/gemini-users/main/install.sh | bash
+# install.sh — one-command setup for the SAS Gemini Dashboard
+# Run from the cloned repo: bash install.sh
 set -euo pipefail
 
-REPO="sas-technology/gemini-users"
-IMAGE="ghcr.io/${REPO}/sveltekit"
-COMPOSE_URL="https://raw.githubusercontent.com/${REPO}/main/sveltekit-app/docker-compose.yml"
+IMAGE="ghcr.io/sas-technology/gemini-users:latest"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 BOLD='\033[1m'
 GREEN='\033[0;32m'
@@ -37,13 +36,13 @@ echo ""
 # ── Choose install directory ───────────────────────────────────────────────────
 read -rp "Install directory [./sas-gemini]: " INSTALL_DIR
 INSTALL_DIR="${INSTALL_DIR:-./sas-gemini}"
-mkdir -p "$INSTALL_DIR"
+INSTALL_DIR="$(mkdir -p "$INSTALL_DIR" && cd "$INSTALL_DIR" && pwd)"
 cd "$INSTALL_DIR"
 
 echo ""
 echo -e "${BOLD}Configuration${RESET}"
 echo "You'll need the Apps Script Web App URL and API key from Part 1 of the setup."
-echo "See https://github.com/${REPO}#part-1--apps-script-setup for details."
+echo "See https://github.com/sas-technology/gemini-users#part-1--apps-script-setup"
 echo ""
 
 # ── Collect credentials ────────────────────────────────────────────────────────
@@ -80,19 +79,31 @@ EOF
 chmod 600 .env
 echo -e "${GREEN}✓ .env written${RESET}"
 
-# ── Fetch docker-compose.yml ───────────────────────────────────────────────────
-if [[ ! -f docker-compose.yml ]]; then
-  if command -v curl &>/dev/null; then
-    curl -fsSL "$COMPOSE_URL" -o docker-compose.yml
-  else
-    wget -qO docker-compose.yml "$COMPOSE_URL"
-  fi
-  echo -e "${GREEN}✓ docker-compose.yml downloaded${RESET}"
-fi
+# ── Write docker-compose.yml ───────────────────────────────────────────────────
+cat > docker-compose.yml <<'COMPOSE'
+services:
+  sas-gemini:
+    image: ghcr.io/sas-technology/gemini-users:latest
+    ports:
+      - '3000:3000'
+    environment:
+      - DASHBOARD_SECRET=${DASHBOARD_SECRET}
+      - APPS_SCRIPT_URL=${APPS_SCRIPT_URL}
+      - APPS_SCRIPT_API_KEY=${APPS_SCRIPT_API_KEY}
+      - ORIGIN=${ORIGIN}
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+COMPOSE
+echo -e "${GREEN}✓ docker-compose.yml written${RESET}"
 
 # ── Pull image and start ───────────────────────────────────────────────────────
 echo ""
-echo "Pulling image ${IMAGE}:latest …"
+echo "Pulling image ${IMAGE} …"
 docker compose pull
 
 echo ""
@@ -112,13 +123,71 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
+# ── macOS: LaunchAgent for auto-start on login ─────────────────────────────────
+if [[ "$(uname)" == "Darwin" ]]; then
+  echo ""
+  read -rp "Install macOS LaunchAgent (auto-start on login)? [Y/n]: " INSTALL_AGENT
+  INSTALL_AGENT="${INSTALL_AGENT:-Y}"
+  if [[ "$INSTALL_AGENT" =~ ^[Yy]$ ]]; then
+    PLIST_SRC="${SCRIPT_DIR}/macos/com.sas.gemini-dashboard.plist"
+    PLIST_DEST="${HOME}/Library/LaunchAgents/com.sas.gemini-dashboard.plist"
+    DOCKER_BIN="$(command -v docker)"
+
+    if [[ -f "$PLIST_SRC" ]]; then
+      sed "s|INSTALL_DIR_PLACEHOLDER|${INSTALL_DIR}|g; s|/usr/local/bin/docker|${DOCKER_BIN}|g" \
+        "$PLIST_SRC" > "$PLIST_DEST"
+    else
+      # Inline fallback if plist template not found
+      cat > "$PLIST_DEST" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.sas.gemini-dashboard</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${DOCKER_BIN}</string>
+    <string>compose</string>
+    <string>--project-directory</string>
+    <string>${INSTALL_DIR}</string>
+    <string>up</string>
+    <string>-d</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>/tmp/sas-gemini-dashboard.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/sas-gemini-dashboard.log</string>
+</dict>
+</plist>
+PLIST
+    fi
+
+    launchctl load "$PLIST_DEST" 2>/dev/null || true
+    echo -e "${GREEN}✓ LaunchAgent installed — container will start automatically on login${RESET}"
+  fi
+fi
+
+# ── Done ───────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}Done.${RESET}"
 echo ""
 echo -e "  Dashboard → ${GREEN}${ORIGIN}${RESET}"
 echo "  Log in with the password you just set."
 echo ""
-echo "Useful commands:"
-echo "  docker compose logs -f     # View live logs"
-echo "  docker compose pull && docker compose up -d   # Update to latest"
-echo "  docker compose down        # Stop"
+
+if [[ "$(uname)" == "Darwin" ]]; then
+  echo -e "${BOLD}Add to Dock (macOS):${RESET}"
+  echo "  Safari:  File → Add to Dock"
+  echo "  Chrome:  ⋮ → Save and Share → Add to Dock"
+  echo ""
+fi
+
+echo "Useful commands (run from ${INSTALL_DIR}):"
+echo "  docker compose logs -f"
+echo "  docker compose pull && docker compose up -d   # update to latest"
+echo "  docker compose down"
