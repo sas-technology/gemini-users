@@ -61,7 +61,7 @@ function doGet(e) {
   }
 
   return HtmlService.createHtmlOutputFromFile('Fallback')
-    .setTitle('SAS Usage Analytics — Fallback')
+    .setTitle('Gemini Usage Tracker — Fallback')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
 }

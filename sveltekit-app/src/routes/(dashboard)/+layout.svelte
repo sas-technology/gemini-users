@@ -11,7 +11,7 @@
 </script>
 
 <nav class="nav">
-  <div class="nav-brand">SAS Usage Analytics</div>
+  <div class="nav-brand">Gemini Usage Tracker</div>
   <ul class="nav-links">
     <li><a href="/" class={page.url.pathname === '/' ? 'active' : ''}>Overview</a></li>
     <li>
@@ -19,7 +19,7 @@
     </li>
   </ul>
   <div class="nav-right">
-    <span>Singapore American School</span>
+    <span>SAS Technology &amp; Innovation</span>
     <button class="logout-btn" onclick={logout}>Logout</button>
   </div>
 </nav>

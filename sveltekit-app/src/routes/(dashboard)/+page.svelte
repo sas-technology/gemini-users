@@ -438,7 +438,7 @@
 </script>
 
 <svelte:head>
-  <title>Overview — SAS Analytics</title>
+  <title>Overview — Gemini Usage Tracker</title>
 </svelte:head>
 
 <!-- Stat cards -->

@@ -283,7 +283,7 @@
   });
 </script>
 
-<svelte:head><title>Divisions — SAS Analytics</title></svelte:head>
+<svelte:head><title>Divisions — Gemini Usage Tracker</title></svelte:head>
 
 <h1 class="page-title">Division Analytics</h1>
 

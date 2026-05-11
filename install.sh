@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — one-command setup for the SAS Gemini Dashboard
+# install.sh — one-command setup for Gemini Usage Tracker (SAS Technology & Innovation)
 # Run from the cloned repo: bash install.sh
 set -euo pipefail
 
@@ -13,7 +13,8 @@ RED='\033[0;31m'
 RESET='\033[0m'
 
 echo ""
-echo -e "${BOLD}SAS Gemini Dashboard — Setup${RESET}"
+echo -e "${BOLD}Gemini Usage Tracker — Setup${RESET}"
+echo -e "SAS Technology & Innovation"
 echo "──────────────────────────────────────"
 echo ""
 

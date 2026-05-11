@@ -1,7 +1,7 @@
 {
-  "name": "SAS Gemini Dashboard",
-  "short_name": "SAS Gemini",
-  "description": "Google Gemini AI usage analytics for Singapore American School",
+  "name": "Gemini Usage Tracker",
+  "short_name": "Gemini Tracker",
+  "description": "Google Gemini AI usage analytics — SAS Technology & Innovation",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a2d58",

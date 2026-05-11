@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-  <title>Sign In — SAS Analytics</title>
+  <title>Sign In — Gemini Usage Tracker</title>
 </svelte:head>
 
 <div
@@ -24,8 +24,10 @@
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
       </div>
-      <h1 style="font-size:22px;font-weight:700;color:#1a2d58;margin-bottom:4px;">SAS Analytics</h1>
-      <p style="font-size:13px;color:#888;">Singapore American School</p>
+      <h1 style="font-size:22px;font-weight:700;color:#1a2d58;margin-bottom:4px;">
+        SAS Technology &amp; Innovation
+      </h1>
+      <p style="font-size:13px;color:#888;">Gemini Usage Tracker</p>
     </div>
 
     <form

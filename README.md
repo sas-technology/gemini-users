@@ -1,4 +1,6 @@
-# SAS Gemini Usage Tracker
+# Gemini Usage Tracker
+
+> SAS Technology & Innovation
 
 Tracks and visualises Google Gemini AI usage across Singapore American School. The system has two parts: a Google Apps Script project that processes data in a Google Spreadsheet, and a self-hosted SvelteKit dashboard that displays analytics.
 
@@ -46,10 +48,10 @@ clasp login
 
 ### 2. Link to the spreadsheet
 
-Open `.clasp.json` and ensure `scriptId` points to the Apps Script project bound to the SAS Gemini tracking spreadsheet. If starting fresh:
+Open `.clasp.json` and ensure `scriptId` points to the Apps Script project bound to the Gemini Usage Tracker spreadsheet. If starting fresh:
 
 ```bash
-clasp create --type sheets --title "SAS Gemini Tracker"
+clasp create --type sheets --title "Gemini Usage Tracker"
 ```
 
 ### 3. Push the script files
@@ -58,7 +60,7 @@ clasp create --type sheets --title "SAS Gemini Tracker"
 clasp push
 ```
 
-This deploys `Code.js`, `WebApp.js`, `Progress.html`, `Fallback.html`, and `appsscript.json` to Google Apps Script.
+This deploys the contents of `apps-script/` (`Code.js`, `WebApp.js`, `Progress.html`, `Fallback.html`, and `appsscript.json`) to Google Apps Script.
 
 ### 4. Set the API key
 
@@ -84,7 +86,7 @@ Keep this URL — you'll need it in Step 2 of the quick install.
 
 ### 6. Set up the spreadsheet menu
 
-Open the bound spreadsheet. A **SAS Gemini** menu should appear in the toolbar. Use **🔄 Run Full Sync** to run the initial data sync.
+Open the bound spreadsheet. A **Gemini Tracker** menu should appear in the toolbar. Use **🔄 Run Full Sync** to run the initial data sync.
 
 ---
 
@@ -150,7 +152,7 @@ Sessions expire after 8 hours.
 
 ## Running the Apps Script sync manually
 
-Open the bound Google Spreadsheet and use the **SAS Gemini → 🔄 Run Full Sync** menu item. A progress dialog shows live logs as each step completes:
+Open the bound Google Spreadsheet and use the **Gemini Tracker → 🔄 Run Full Sync** menu item. A progress dialog shows live logs as each step completes:
 
 1. Detect duplicate emails
 2. Sync pro user list from staff list
@@ -195,11 +197,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions and PR process.
 
 ```text
 /
-├── Code.js                # Sheet sync, deduplication, auto-triggers
-├── WebApp.js              # JSON API + fallback HTML dashboard
-├── Progress.html          # Modal shown while sync scripts run
-├── Fallback.html          # Emergency read-only dashboard
-├── appsscript.json        # Apps Script runtime config (V8, SGT)
+├── apps-script/           # Google Apps Script source (pushed via clasp)
+│   ├── Code.js            # Sheet sync, deduplication, auto-triggers
+│   ├── WebApp.js          # JSON API + fallback HTML dashboard
+│   ├── Progress.html      # Modal shown while sync scripts run
+│   ├── Fallback.html      # Emergency read-only dashboard
+│   └── appsscript.json    # Apps Script runtime config (V8, SGT)
 ├── install.sh             # One-command setup script
 ├── sveltekit-app/         # SvelteKit dashboard
 │   ├── src/
