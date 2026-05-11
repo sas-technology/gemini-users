@@ -13,7 +13,8 @@ FROM node:24-alpine AS runner
 WORKDIR /app
 RUN addgroup -S nodejs && adduser -S sveltekit -G nodejs
 COPY --from=builder /app/build ./build
-COPY --from=builder /app/package.json ./
+COPY --from=builder /app/package.json /app/package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
 USER sveltekit
 EXPOSE 3000
 ENV PORT=3000
