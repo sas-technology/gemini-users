@@ -79,7 +79,7 @@ In the Apps Script editor:
 1. Click **Deploy → New deployment**
 2. Select type: **Web App**
 3. Set **Execute as**: Me
-4. Set **Who has access**: Anyone with Google Account
+4. Set **Who has access**: Anyone _(required for the SvelteKit server to fetch the JSON API; auth is enforced via the `API_KEY` URL param)_
 5. Click **Deploy** and copy the Web App URL
 
 Keep this URL — you'll need it in Step 2 of the quick install.
