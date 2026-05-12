@@ -4,14 +4,13 @@ import { getUsageData } from '$lib/sheets';
 import type { UsageData } from '$lib/types';
 
 export async function GET() {
-  try {
-    let data = cacheGet<UsageData>('usage');
-    if (!data) {
-      data = await getUsageData();
-      cacheSet('usage', data);
-    }
-    return json(data);
-  } catch (err) {
-    throw error(502, err instanceof Error ? err.message : 'Failed to fetch usage data');
+  const cached = cacheGet<UsageData>('usage');
+  if (cached) return json(cached);
+
+  const result = await getUsageData();
+  if (result.error || !result.data) {
+    throw error(502, result.error ?? 'Failed to fetch usage data');
   }
+  cacheSet('usage', result.data);
+  return json(result.data);
 }

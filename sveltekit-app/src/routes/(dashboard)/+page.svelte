@@ -4,6 +4,7 @@
   import type { UserData, UsagePriority, ServiceName } from '$lib/types';
   import { SERVICES } from '$lib/types';
   import { Chart } from '$lib/chartSetup';
+  import ErrorBanner from '$lib/components/ErrorBanner.svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -51,6 +52,7 @@
   };
 
   let filtered = $derived.by(() => {
+    if (!data.usage) return [];
     return data.usage.users.filter((u: UserData) => {
       if (quickFilter === 'pro' && !u.hasGeminiPro) return false;
       if (quickFilter === 'basic' && (!u.isStaff || u.hasGeminiPro)) return false;
@@ -418,6 +420,23 @@
   <title>Overview — Gemini Usage Tracker</title>
 </svelte:head>
 
+{#if data.errors.usage}
+  <ErrorBanner message={data.errors.usage} source="usage data" />
+{/if}
+{#if data.errors.divisions}
+  <ErrorBanner message={data.errors.divisions} source="division data" />
+{/if}
+{#if data.errors.students}
+  <ErrorBanner message={data.errors.students} source="student data" />
+{/if}
+
+{#if !data.usage}
+  <div class="no-data">
+    <h2>No usage data available</h2>
+    <p>The data sync hasn't completed yet, or the Apps Script API is unreachable.</p>
+  </div>
+{:else}
+
 <!-- Stat cards -->
 <div class="stats-grid">
   {#each [{ cls: 'total', label: 'Total Users', value: stats.total, sub: '' }, { cls: 'pro', label: 'Gemini Pro Users', value: stats.geminiPro.count, sub: `Avg: ${stats.geminiPro.avgUsage.toLocaleString()}` }, { cls: 'basic', label: 'Basic/No Pro Users', value: stats.basic.count, sub: `Avg: ${stats.basic.avgUsage.toLocaleString()}` }, { cls: 'high', label: 'High Priority', value: stats.priority.High.count, sub: `Pro: ${stats.priority.High.pro} | Basic: ${stats.priority.High.basic}` }, { cls: 'medium', label: 'Medium Priority', value: stats.priority.Medium.count, sub: `Pro: ${stats.priority.Medium.pro} | Basic: ${stats.priority.Medium.basic}` }, { cls: 'low', label: 'Low Priority', value: stats.priority.Low.count, sub: `Pro: ${stats.priority.Low.pro} | Basic: ${stats.priority.Low.basic}` }, { cls: 'zero', label: 'Zero Priority', value: stats.priority.Zero.count, sub: `Pro: ${stats.priority.Zero.pro} | Basic: ${stats.priority.Zero.basic}` }, { cls: 'usage', label: 'Total Usage', value: stats.totalUsage.toLocaleString(), sub: `Avg: ${stats.avgUsage.toLocaleString()}` }] as card}
@@ -673,4 +692,6 @@
       >
     </div>
   </div>
+{/if}
+
 {/if}

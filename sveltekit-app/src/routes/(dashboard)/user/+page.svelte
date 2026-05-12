@@ -3,6 +3,7 @@
   import type { PageData } from './$types';
   import { SERVICES } from '$lib/types';
   import { Chart } from '$lib/chartSetup';
+  import ErrorBanner from '$lib/components/ErrorBanner.svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -119,6 +120,10 @@
 </svelte:head>
 
 <a href="/" class="back-btn">← Back to Overview</a>
+
+{#if data.error}
+  <ErrorBanner message={data.error} source="user profile" />
+{/if}
 
 {#if !data.email}
   <div class="no-data">

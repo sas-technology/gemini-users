@@ -3,6 +3,7 @@
   import type { PageData } from './$types';
   import type { Division, DivisionUser, UsagePriority } from '$lib/types';
   import { Chart } from '$lib/chartSetup';
+  import ErrorBanner from '$lib/components/ErrorBanner.svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -28,7 +29,9 @@
   }
 
   let activeTab = $state('compare');
-  let divNames = $derived(Object.keys(data.divisions.divisions).sort());
+  let divNames = $derived(
+    data.divisions ? Object.keys(data.divisions.divisions).sort() : []
+  );
   let activeDiv = $derived(
     divNames.find((n) => n.replace(/\s+/g, '-').toLowerCase() === activeTab)
   );
@@ -74,7 +77,7 @@
 
   function buildCompareCharts() {
     destroyCharts();
-    if (!userCountCanvas) return;
+    if (!userCountCanvas || !data.divisions) return;
     const names = divNames;
     const colors = names.map((n) => DIVISION_COLORS[n] ?? '#6d6f72');
     const divs = data.divisions.divisions;
@@ -266,7 +269,7 @@
     if (tab === 'compare') {
       setTimeout(buildCompareCharts, 0);
     } else {
-      const div = activeDiv ? data.divisions.divisions[activeDiv] : null;
+      const div = activeDiv && data.divisions ? data.divisions.divisions[activeDiv] : null;
       if (div) setTimeout(() => buildDivisionCharts(div), 0);
     }
   });
@@ -275,6 +278,17 @@
 <svelte:head><title>Divisions — Gemini Usage Tracker</title></svelte:head>
 
 <h1 class="page-title">Division Analytics</h1>
+
+{#if data.error}
+  <ErrorBanner message={data.error} source="division data" />
+{/if}
+
+{#if !data.divisions}
+  <div class="no-data">
+    <h2>No division data available</h2>
+    <p>The data sync hasn't completed yet, or the Apps Script API is unreachable.</p>
+  </div>
+{:else}
 
 <div class="sas-tabs">
   <div role="tablist" aria-orientation="horizontal">
@@ -352,7 +366,7 @@
         class="btn"
         onclick={() => {
           const rows = divNames.map((n) => {
-            const d = data.divisions.divisions[n];
+            const d = data.divisions!.divisions[n];
             return {
               division: n,
               userCount: d.userCount,
@@ -540,4 +554,6 @@
   </div>
 {:else}
   <div class="no-data"><h2>Division not found</h2></div>
+{/if}
+
 {/if}
