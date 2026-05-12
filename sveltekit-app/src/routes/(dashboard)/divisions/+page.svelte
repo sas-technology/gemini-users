@@ -2,18 +2,7 @@
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
   import type { Division, DivisionUser, UsagePriority } from '$lib/types';
-  import {
-    Chart,
-    ArcElement,
-    Tooltip,
-    Legend,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-  } from 'chart.js';
-
-  Chart.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
+  import { Chart } from '$lib/chartSetup';
 
   let { data }: { data: PageData } = $props();
 

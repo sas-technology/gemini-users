@@ -3,30 +3,7 @@
   import type { PageData } from './$types';
   import type { UserData, UsagePriority, ServiceName } from '$lib/types';
   import { SERVICES } from '$lib/types';
-  import {
-    Chart,
-    ArcElement,
-    Tooltip,
-    Legend,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    PointElement,
-    LineElement,
-    Title,
-  } from 'chart.js';
-
-  Chart.register(
-    ArcElement,
-    Tooltip,
-    Legend,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    PointElement,
-    LineElement,
-    Title
-  );
+  import { Chart } from '$lib/chartSetup';
 
   let { data }: { data: PageData } = $props();
 
