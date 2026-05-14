@@ -4,6 +4,9 @@
   import type { UserData, UsagePriority, ServiceName } from '$lib/types';
   import { SERVICES } from '$lib/types';
   import { Chart } from '$lib/chartSetup';
+  import InsightsPanel from '$lib/components/InsightsPanel.svelte';
+  import ChartTakeaway from '$lib/components/ChartTakeaway.svelte';
+  import OperationalList from '$lib/components/OperationalList.svelte';
   import ErrorBanner from '$lib/components/ErrorBanner.svelte';
 
   let { data }: { data: PageData } = $props();
@@ -430,12 +433,22 @@
   <ErrorBanner message={data.errors.students} source="student data" />
 {/if}
 
+<InsightsPanel summary={data.insights.summary} />
+
 {#if !data.usage}
   <div class="no-data">
     <h2>No usage data available</h2>
     <p>The data sync hasn't completed yet, or the Apps Script API is unreachable.</p>
   </div>
 {:else}
+
+{#if data.insights.operational.length > 0}
+  <div class="operational-grid">
+    {#each data.insights.operational as list (list.id)}
+      <OperationalList {list} />
+    {/each}
+  </div>
+{/if}
 
 <!-- Stat cards -->
 <div class="stats-grid">
@@ -536,6 +549,13 @@
     <section>
       <div class="chart-title">Priority Distribution</div>
       <div class="chart-wrapper"><canvas bind:this={priorityDoughnutCanvas}></canvas></div>
+      {#if stats.priority.High.count + stats.priority.Medium.count > 0}
+        <ChartTakeaway>
+          {stats.priority.High.count + stats.priority.Medium.count} of {stats.total} users
+          ({Math.round(((stats.priority.High.count + stats.priority.Medium.count) / Math.max(stats.total, 1)) * 100)}%)
+          are sustained adopters (High or Medium); the rest sit in the long tail.
+        </ChartTakeaway>
+      {/if}
     </section>
   </div>
   <div class="card">
@@ -551,6 +571,15 @@
     <section>
       <div class="chart-title">License Distribution</div>
       <div class="chart-wrapper"><canvas bind:this={licenseDoughnutCanvas}></canvas></div>
+      {#if stats.geminiPro.count > 0 && stats.basic.count > 0}
+        <ChartTakeaway>
+          Pro holders average {stats.geminiPro.avgUsage.toLocaleString()} actions vs.
+          {stats.basic.avgUsage.toLocaleString()} for Basic
+          ({stats.basic.avgUsage > 0
+            ? (stats.geminiPro.avgUsage / stats.basic.avgUsage).toFixed(1)
+            : '∞'}× more activity per user).
+        </ChartTakeaway>
+      {/if}
     </section>
   </div>
   <div class="card">
@@ -566,6 +595,13 @@
     <section>
       <div class="chart-title">Service Usage</div>
       <div class="chart-wrapper"><canvas bind:this={servicesDoughnutCanvas}></canvas></div>
+      {#if data.insights.summary.facts.geminiSharePct > 0}
+        <ChartTakeaway>
+          Gemini chat is {data.insights.summary.facts.geminiSharePct}% of recorded
+          activity{#if data.insights.summary.facts.secondService}; {data.insights.summary.facts.secondService.name}
+            trails at {data.insights.summary.facts.secondService.sharePct}%{/if}.
+        </ChartTakeaway>
+      {/if}
     </section>
   </div>
   <div class="card">
@@ -581,6 +617,12 @@
     <section>
       <div class="chart-title">Top 10 Users</div>
       <div class="chart-wrapper tall"><canvas bind:this={topUsersCanvas}></canvas></div>
+      {#if stats.total > 0 && stats.avgUsage > 0}
+        <ChartTakeaway>
+          Average activity is {stats.avgUsage.toLocaleString()} actions per user — power
+          users in this chart drive a disproportionate share of total usage.
+        </ChartTakeaway>
+      {/if}
     </section>
   </div>
   <div class="card">
@@ -695,3 +737,12 @@
 {/if}
 
 {/if}
+
+<style>
+  .operational-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+  }
+</style>

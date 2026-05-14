@@ -3,6 +3,7 @@ import { cacheGet, cacheSet } from '$lib/cache';
 import { getUsageData, getStudentData, getDivisionData } from '$lib/sheets';
 import type { UsageData, StudentData, DivisionData } from '$lib/types';
 import type { FetchResult } from '$lib/sheets';
+import { computeExecutiveSummary, computeOperationalLists } from '$lib/insights';
 
 // We always return a result for every upstream call. Pages render a
 // banner on partial failure rather than 502'ing the whole route.
@@ -24,6 +25,13 @@ export const load: PageServerLoad = async () => {
     loadCached<DivisionData>('divisions', getDivisionData),
   ]);
 
+  const studentTotals = students.data
+    ? {
+        withAccess: students.data.withAccess.total,
+        withoutAccess: students.data.withoutAccess.total,
+      }
+    : null;
+
   return {
     usage: usage.data,
     students: students.data,
@@ -32,6 +40,10 @@ export const load: PageServerLoad = async () => {
       usage: usage.error,
       students: students.error,
       divisions: divisions.error,
+    },
+    insights: {
+      summary: computeExecutiveSummary(usage.data, divisions.data, studentTotals),
+      operational: computeOperationalLists(usage.data),
     },
   };
 };
