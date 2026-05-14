@@ -3,6 +3,8 @@
   import type { PageData } from './$types';
   import { SERVICES } from '$lib/types';
   import { Chart } from '$lib/chartSetup';
+  import ErrorBanner from '$lib/components/ErrorBanner.svelte';
+  import UserInsightCallout from '$lib/components/UserInsightCallout.svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -120,6 +122,10 @@
 
 <a href="/" class="back-btn">← Back to Overview</a>
 
+{#if data.error}
+  <ErrorBanner message={data.error} source="user profile" />
+{/if}
+
 {#if !data.email}
   <div class="no-data">
     <h2>No email specified</h2>
@@ -152,6 +158,10 @@
         </div>{/if}
     </div>
   </div>
+
+  {#if data.insight}
+    <UserInsightCallout insight={data.insight} />
+  {/if}
 
   <div class="stats-grid">
     <div class="stat-card {(p.overallPriority || 'zero').toLowerCase()}">

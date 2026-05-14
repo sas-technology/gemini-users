@@ -2,29 +2,48 @@ import type { PageServerLoad } from './$types';
 import { cacheGet, cacheSet } from '$lib/cache';
 import { getUsageData, getStudentData, getDivisionData } from '$lib/sheets';
 import type { UsageData, StudentData, DivisionData } from '$lib/types';
-import { error } from '@sveltejs/kit';
+import type { FetchResult } from '$lib/sheets';
+import { computeExecutiveSummary, computeOperationalLists } from '$lib/insights';
+
+// We always return a result for every upstream call. Pages render a
+// banner on partial failure rather than 502'ing the whole route.
+async function loadCached<T>(
+  key: string,
+  fetcher: () => Promise<FetchResult<T>>
+): Promise<FetchResult<T>> {
+  const cached = cacheGet<T>(key);
+  if (cached) return { data: cached, error: null };
+  const result = await fetcher();
+  if (result.data) cacheSet(key, result.data);
+  return result;
+}
 
 export const load: PageServerLoad = async () => {
-  try {
-    let usage = cacheGet<UsageData>('usage');
-    let students = cacheGet<StudentData>('students');
-    let divisions = cacheGet<DivisionData>('divisions');
+  const [usage, students, divisions] = await Promise.all([
+    loadCached<UsageData>('usage', getUsageData),
+    loadCached<StudentData>('students', getStudentData),
+    loadCached<DivisionData>('divisions', getDivisionData),
+  ]);
 
-    if (!usage) {
-      usage = await getUsageData();
-      cacheSet('usage', usage);
-    }
-    if (!students) {
-      students = await getStudentData();
-      cacheSet('students', students);
-    }
-    if (!divisions) {
-      divisions = await getDivisionData();
-      cacheSet('divisions', divisions);
-    }
+  const studentTotals = students.data
+    ? {
+        withAccess: students.data.withAccess.total,
+        withoutAccess: students.data.withoutAccess.total,
+      }
+    : null;
 
-    return { usage, students, divisions };
-  } catch (err) {
-    throw error(502, err instanceof Error ? err.message : 'Failed to load data');
-  }
+  return {
+    usage: usage.data,
+    students: students.data,
+    divisions: divisions.data,
+    errors: {
+      usage: usage.error,
+      students: students.error,
+      divisions: divisions.error,
+    },
+    insights: {
+      summary: computeExecutiveSummary(usage.data, divisions.data, studentTotals),
+      operational: computeOperationalLists(usage.data),
+    },
+  };
 };

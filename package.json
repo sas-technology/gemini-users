@@ -17,6 +17,6 @@
     "prettier": "^3.5.3"
   },
   "lint-staged": {
-    "**/*.{js,ts,tsx,css,json,html,md,yaml,yml}": "prettier --write --ignore-unknown"
+    "**/*.{js,ts,tsx,svelte,css,json,html,md,yaml,yml}": "prettier --write --ignore-unknown"
   }
 }

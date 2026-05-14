@@ -4,6 +4,11 @@
   import type { UserData, UsagePriority, ServiceName } from '$lib/types';
   import { SERVICES } from '$lib/types';
   import { Chart } from '$lib/chartSetup';
+  import InsightsPanel from '$lib/components/InsightsPanel.svelte';
+  import ChartTakeaway from '$lib/components/ChartTakeaway.svelte';
+  import OperationalList from '$lib/components/OperationalList.svelte';
+  import ErrorBanner from '$lib/components/ErrorBanner.svelte';
+  import Modal from '$lib/components/Modal.svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -51,6 +56,7 @@
   };
 
   let filtered = $derived.by(() => {
+    if (!data.usage) return [];
     return data.usage.users.filter((u: UserData) => {
       if (quickFilter === 'pro' && !u.hasGeminiPro) return false;
       if (quickFilter === 'basic' && (!u.isStaff || u.hasGeminiPro)) return false;
@@ -418,259 +424,315 @@
   <title>Overview — Gemini Usage Tracker</title>
 </svelte:head>
 
-<!-- Stat cards -->
-<div class="stats-grid">
-  {#each [{ cls: 'total', label: 'Total Users', value: stats.total, sub: '' }, { cls: 'pro', label: 'Gemini Pro Users', value: stats.geminiPro.count, sub: `Avg: ${stats.geminiPro.avgUsage.toLocaleString()}` }, { cls: 'basic', label: 'Basic/No Pro Users', value: stats.basic.count, sub: `Avg: ${stats.basic.avgUsage.toLocaleString()}` }, { cls: 'high', label: 'High Priority', value: stats.priority.High.count, sub: `Pro: ${stats.priority.High.pro} | Basic: ${stats.priority.High.basic}` }, { cls: 'medium', label: 'Medium Priority', value: stats.priority.Medium.count, sub: `Pro: ${stats.priority.Medium.pro} | Basic: ${stats.priority.Medium.basic}` }, { cls: 'low', label: 'Low Priority', value: stats.priority.Low.count, sub: `Pro: ${stats.priority.Low.pro} | Basic: ${stats.priority.Low.basic}` }, { cls: 'zero', label: 'Zero Priority', value: stats.priority.Zero.count, sub: `Pro: ${stats.priority.Zero.pro} | Basic: ${stats.priority.Zero.basic}` }, { cls: 'usage', label: 'Total Usage', value: stats.totalUsage.toLocaleString(), sub: `Avg: ${stats.avgUsage.toLocaleString()}` }] as card}
-    <div class="stat-card {card.cls}">
-      <div class="stat-label">{card.label}</div>
-      <div class="stat-value">{card.value}</div>
-      {#if card.sub}<div class="stat-subtext">{card.sub}</div>{/if}
-    </div>
-  {/each}
+{#if data.errors.usage}
+  <ErrorBanner message={data.errors.usage} source="usage data" />
+{/if}
+{#if data.errors.divisions}
+  <ErrorBanner message={data.errors.divisions} source="division data" />
+{/if}
+{#if data.errors.students}
+  <ErrorBanner message={data.errors.students} source="student data" />
+{/if}
 
-  {#if data.students}
-    <div class="stat-card total">
-      <div class="stat-label">Students With Gemini</div>
-      <div class="stat-value">{data.students.withAccess.total}</div>
+<InsightsPanel summary={data.insights.summary} />
+
+{#if !data.usage}
+  <div class="no-data">
+    <h2>No usage data available</h2>
+    <p>The data sync hasn't completed yet, or the Apps Script API is unreachable.</p>
+  </div>
+{:else}
+  {#if data.insights.operational.length > 0}
+    <div class="operational-grid">
+      {#each data.insights.operational as list (list.id)}
+        <OperationalList {list} />
+      {/each}
     </div>
   {/if}
 
-  {#if data.usage.studentsNoGeminiCount > 0}
-    <div class="stat-card" style="border-left-color:#6d6f72;">
-      <div class="stat-label">Students Without Gemini</div>
-      <div class="stat-value">{data.usage.studentsNoGeminiCount}</div>
-      <div class="stat-subtext">Excluded from metrics</div>
-    </div>
-  {/if}
-
-  {#if data.usage.untrackedUsers.count > 0}
-    <button
-      class="stat-card"
-      style="border-left-color:#ff9800;cursor:pointer;text-align:left;width:100%;"
-      onclick={() => (showUntracked = true)}
-    >
-      <div class="stat-label">Untracked Users</div>
-      <div class="stat-value">{data.usage.untrackedUsers.count}</div>
-      <div class="stat-subtext">Not in any known list</div>
-    </button>
-  {/if}
-</div>
-
-<!-- Division summary -->
-{#if data.divisions?.divisions}
+  <!-- Stat cards -->
   <div class="stats-grid">
-    {#each Object.entries(data.divisions.divisions) as [name, d]}
-      <a href="/divisions" style="text-decoration:none;">
-        <div class="stat-card {divColors[name] ?? 'division-admin'}" style="cursor:pointer;">
-          <div class="stat-label">{name}</div>
-          <div class="stat-value">{d.userCount}</div>
-          <div class="stat-subtext">Pro: {d.proCount} | Avg Days: {d.avgActiveDays}</div>
-        </div>
-      </a>
+    {#each [{ cls: 'total', label: 'Total Users', value: stats.total, sub: '' }, { cls: 'pro', label: 'Gemini Pro Users', value: stats.geminiPro.count, sub: `Avg: ${stats.geminiPro.avgUsage.toLocaleString()}` }, { cls: 'basic', label: 'Basic/No Pro Users', value: stats.basic.count, sub: `Avg: ${stats.basic.avgUsage.toLocaleString()}` }, { cls: 'high', label: 'High Priority', value: stats.priority.High.count, sub: `Pro: ${stats.priority.High.pro} | Basic: ${stats.priority.High.basic}` }, { cls: 'medium', label: 'Medium Priority', value: stats.priority.Medium.count, sub: `Pro: ${stats.priority.Medium.pro} | Basic: ${stats.priority.Medium.basic}` }, { cls: 'low', label: 'Low Priority', value: stats.priority.Low.count, sub: `Pro: ${stats.priority.Low.pro} | Basic: ${stats.priority.Low.basic}` }, { cls: 'zero', label: 'Zero Priority', value: stats.priority.Zero.count, sub: `Pro: ${stats.priority.Zero.pro} | Basic: ${stats.priority.Zero.basic}` }, { cls: 'usage', label: 'Total Usage', value: stats.totalUsage.toLocaleString(), sub: `Avg: ${stats.avgUsage.toLocaleString()}` }] as card}
+      <div class="stat-card {card.cls}">
+        <div class="stat-label">{card.label}</div>
+        <div class="stat-value">{card.value}</div>
+        {#if card.sub}<div class="stat-subtext">{card.sub}</div>{/if}
+      </div>
     {/each}
-  </div>
-{/if}
 
-<!-- Filters -->
-<div class="filters-bar">
-  {#each ['all', 'pro', 'basic', 'non-active-staff', 'students'] as QuickFilter[] as f}
-    <button
-      class="quick-filter-btn{quickFilter === f ? ' active' : ''}"
-      onclick={() => (quickFilter = f)}
-    >
-      {QUICK_LABELS[f]}
-    </button>
-  {/each}
-  <div class="filter-separator"></div>
-  <div class="filter-group">
-    <label for="svc-filter">Service</label>
-    <select id="svc-filter" bind:value={serviceFilter}>
-      <option value="all">All</option>
-      {#each SERVICES as s}<option value={s}>{s}</option>{/each}
-    </select>
-  </div>
-  <div class="filter-group">
-    <label for="pri-filter">Priority</label>
-    <select id="pri-filter" bind:value={priorityFilter}>
-      <option value="all">All</option>
-      {#each ['High', 'Medium', 'Low', 'Zero'] as p}<option value={p}>{p}</option>{/each}
-    </select>
-  </div>
-  <div class="filter-group">
-    <label for="usage-filter">Min Level</label>
-    <select id="usage-filter" bind:value={usageFilter}>
-      <option value="all">All</option>
-      <option value="low-and-above">Low+</option>
-      <option value="medium-and-above">Med+</option>
-      <option value="high-only">High</option>
-    </select>
-  </div>
-  <div class="filter-group">
-    <label for="search">Search</label>
-    <input id="search" class="search-input" type="text" placeholder="Email…" bind:value={search} />
-  </div>
-</div>
+    {#if data.students}
+      <div class="stat-card total">
+        <div class="stat-label">Students With Gemini</div>
+        <div class="stat-value">{data.students.withAccess.total}</div>
+      </div>
+    {/if}
 
-<!-- Charts -->
-<div class="charts-grid">
-  <div class="card">
-    <section>
-      <div class="chart-title">Priority Distribution</div>
-      <div class="chart-wrapper"><canvas bind:this={priorityDoughnutCanvas}></canvas></div>
-    </section>
-  </div>
-  <div class="card">
-    <section>
-      <div class="chart-title">Priority: Pro vs Basic</div>
-      <div class="chart-wrapper"><canvas bind:this={priorityBarCanvas}></canvas></div>
-    </section>
-  </div>
-</div>
+    {#if data.usage.studentsNoGeminiCount > 0}
+      <div class="stat-card" style="border-left-color:#6d6f72;">
+        <div class="stat-label">Students Without Gemini</div>
+        <div class="stat-value">{data.usage.studentsNoGeminiCount}</div>
+        <div class="stat-subtext">Excluded from metrics</div>
+      </div>
+    {/if}
 
-<div class="charts-grid">
-  <div class="card">
-    <section>
-      <div class="chart-title">License Distribution</div>
-      <div class="chart-wrapper"><canvas bind:this={licenseDoughnutCanvas}></canvas></div>
-    </section>
-  </div>
-  <div class="card">
-    <section>
-      <div class="chart-title">Gemini Usage: Pro vs Basic</div>
-      <div class="chart-wrapper"><canvas bind:this={geminiBarCanvas}></canvas></div>
-    </section>
-  </div>
-</div>
-
-<div class="charts-grid">
-  <div class="card">
-    <section>
-      <div class="chart-title">Service Usage</div>
-      <div class="chart-wrapper"><canvas bind:this={servicesDoughnutCanvas}></canvas></div>
-    </section>
-  </div>
-  <div class="card">
-    <section>
-      <div class="chart-title">Pro vs Basic by Service</div>
-      <div class="chart-wrapper"><canvas bind:this={servicesBarCanvas}></canvas></div>
-    </section>
-  </div>
-</div>
-
-<div class="charts-grid">
-  <div class="card">
-    <section>
-      <div class="chart-title">Top 10 Users</div>
-      <div class="chart-wrapper tall"><canvas bind:this={topUsersCanvas}></canvas></div>
-    </section>
-  </div>
-  <div class="card">
-    <section>
-      <div class="chart-title">Usage vs Active Days</div>
-      <div class="chart-wrapper tall"><canvas bind:this={scatterCanvas}></canvas></div>
-    </section>
-  </div>
-</div>
-
-<!-- User table -->
-<div class="card">
-  <header>
-    <h2>User Data ({filtered.length} users)</h2>
-    <button class="btn" onclick={() => downloadCSV(sortedFiltered, 'sas-usage-analytics.csv')}>
-      Export CSV
-    </button>
-  </header>
-  <section>
-    <div class="table-scroll">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Email</th>
-            <th>License</th>
-            <th>Priority</th>
-            <th>Active Days</th>
-            {#each SERVICES as s}<th>{s}</th>{/each}
-          </tr>
-        </thead>
-        <tbody>
-          {#each sortedFiltered as u, i}
-            {@const isUntracked = data.usage.untrackedUsers.users.some(
-              (x) => x.email.toLowerCase() === u.email.toLowerCase()
-            )}
-            <tr>
-              <td>{i + 1}</td>
-              <td>
-                <a href="/user?email={encodeURIComponent(u.email)}" class="email-link">{u.email}</a>
-              </td>
-              <td>
-                <span class={u.hasGeminiPro ? 'badge badge-pro' : 'badge badge-basic'}>
-                  {u.hasGeminiPro ? 'Pro' : 'Basic'}
-                </span>
-                {#if isUntracked}
-                  <span class="badge badge-untracked" style="margin-left:4px;">Untracked</span>
-                {/if}
-              </td>
-              <td>
-                <span class={priorityBadgeClass(u.overallUsagePriority)}
-                  >{u.overallUsagePriority}</span
-                >
-                <span class="usage-value"> ({u.overallUsage.toLocaleString()})</span>
-              </td>
-              <td>{u.activeDays}</td>
-              {#each SERVICES as s}
-                <td>
-                  <span class={priorityBadgeClass(u.servicesPriority[s])}
-                    >{u.servicesPriority[s]}</span
-                  >
-                  <span class="usage-value"> ({u.services[s].toLocaleString()})</span>
-                </td>
-              {/each}
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-  </section>
-</div>
-
-<!-- Untracked modal -->
-{#if showUntracked}
-  <div
-    style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:center;justify-content:center;"
-    role="presentation"
-    tabindex="-1"
-    onclick={() => (showUntracked = false)}
-    onkeydown={(e) => e.key === 'Escape' && (showUntracked = false)}
-  >
-    <div
-      role="dialog"
-      aria-modal="true"
-      tabindex="-1"
-      style="background:white;border-radius:12px;padding:30px;max-width:600px;width:90%;max-height:80vh;overflow:auto;"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
-    >
-      <h2 style="margin-bottom:16px;color:#1a2d58;">
-        Untracked Users ({data.usage.untrackedUsers.count})
-      </h2>
-      <table class="table">
-        <thead><tr><th>#</th><th>Email</th><th>Priority</th><th>Usage</th><th>Days</th></tr></thead>
-        <tbody>
-          {#each [...data.usage.untrackedUsers.users].sort((a, b) => b.overallUsage - a.overallUsage) as u, i}
-            <tr>
-              <td>{i + 1}</td>
-              <td>{u.email}</td>
-              <td><span class={priorityBadgeClass(u.priority)}>{u.priority}</span></td>
-              <td>{u.overallUsage.toLocaleString()}</td>
-              <td>{u.activeDays}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-      <button class="btn" style="margin-top:16px;" onclick={() => (showUntracked = false)}
-        >Close</button
+    {#if data.usage.untrackedUsers.count > 0}
+      <button
+        class="stat-card"
+        style="border-left-color:#ff9800;cursor:pointer;text-align:left;width:100%;"
+        onclick={() => (showUntracked = true)}
       >
+        <div class="stat-label">Untracked Users</div>
+        <div class="stat-value">{data.usage.untrackedUsers.count}</div>
+        <div class="stat-subtext">Not in any known list</div>
+      </button>
+    {/if}
+  </div>
+
+  <!-- Division summary -->
+  {#if data.divisions?.divisions}
+    <div class="stats-grid">
+      {#each Object.entries(data.divisions.divisions) as [name, d]}
+        <a href="/divisions" style="text-decoration:none;">
+          <div class="stat-card {divColors[name] ?? 'division-admin'}" style="cursor:pointer;">
+            <div class="stat-label">{name}</div>
+            <div class="stat-value">{d.userCount}</div>
+            <div class="stat-subtext">Pro: {d.proCount} | Avg Days: {d.avgActiveDays}</div>
+          </div>
+        </a>
+      {/each}
+    </div>
+  {/if}
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    {#each ['all', 'pro', 'basic', 'non-active-staff', 'students'] as QuickFilter[] as f}
+      <button
+        class="quick-filter-btn{quickFilter === f ? ' active' : ''}"
+        onclick={() => (quickFilter = f)}
+      >
+        {QUICK_LABELS[f]}
+      </button>
+    {/each}
+    <div class="filter-separator"></div>
+    <div class="filter-group">
+      <label for="svc-filter">Service</label>
+      <select id="svc-filter" bind:value={serviceFilter}>
+        <option value="all">All</option>
+        {#each SERVICES as s}<option value={s}>{s}</option>{/each}
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="pri-filter">Priority</label>
+      <select id="pri-filter" bind:value={priorityFilter}>
+        <option value="all">All</option>
+        {#each ['High', 'Medium', 'Low', 'Zero'] as p}<option value={p}>{p}</option>{/each}
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="usage-filter">Min Level</label>
+      <select id="usage-filter" bind:value={usageFilter}>
+        <option value="all">All</option>
+        <option value="low-and-above">Low+</option>
+        <option value="medium-and-above">Med+</option>
+        <option value="high-only">High</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="search">Search</label>
+      <input
+        id="search"
+        class="search-input"
+        type="text"
+        placeholder="Email…"
+        bind:value={search}
+      />
     </div>
   </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="card">
+      <section>
+        <div class="chart-title">Priority Distribution</div>
+        <div class="chart-wrapper"><canvas bind:this={priorityDoughnutCanvas}></canvas></div>
+        {#if stats.priority.High.count + stats.priority.Medium.count > 0}
+          <ChartTakeaway>
+            {stats.priority.High.count + stats.priority.Medium.count} of {stats.total} users ({Math.round(
+              ((stats.priority.High.count + stats.priority.Medium.count) /
+                Math.max(stats.total, 1)) *
+                100
+            )}%) are sustained adopters (High or Medium); the rest sit in the long tail.
+          </ChartTakeaway>
+        {/if}
+      </section>
+    </div>
+    <div class="card">
+      <section>
+        <div class="chart-title">Priority: Pro vs Basic</div>
+        <div class="chart-wrapper"><canvas bind:this={priorityBarCanvas}></canvas></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="card">
+      <section>
+        <div class="chart-title">License Distribution</div>
+        <div class="chart-wrapper"><canvas bind:this={licenseDoughnutCanvas}></canvas></div>
+        {#if stats.geminiPro.count > 0 && stats.basic.count > 0}
+          <ChartTakeaway>
+            Pro holders average {stats.geminiPro.avgUsage.toLocaleString()} actions vs.
+            {stats.basic.avgUsage.toLocaleString()} for Basic ({stats.basic.avgUsage > 0
+              ? (stats.geminiPro.avgUsage / stats.basic.avgUsage).toFixed(1)
+              : '∞'}× more activity per user).
+          </ChartTakeaway>
+        {/if}
+      </section>
+    </div>
+    <div class="card">
+      <section>
+        <div class="chart-title">Gemini Usage: Pro vs Basic</div>
+        <div class="chart-wrapper"><canvas bind:this={geminiBarCanvas}></canvas></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="card">
+      <section>
+        <div class="chart-title">Service Usage</div>
+        <div class="chart-wrapper"><canvas bind:this={servicesDoughnutCanvas}></canvas></div>
+        {#if data.insights.summary.facts.geminiSharePct > 0}
+          <ChartTakeaway>
+            Gemini chat is {data.insights.summary.facts.geminiSharePct}% of recorded activity{#if data.insights.summary.facts.secondService};
+              {data.insights.summary.facts.secondService.name}
+              trails at {data.insights.summary.facts.secondService.sharePct}%{/if}.
+          </ChartTakeaway>
+        {/if}
+      </section>
+    </div>
+    <div class="card">
+      <section>
+        <div class="chart-title">Pro vs Basic by Service</div>
+        <div class="chart-wrapper"><canvas bind:this={servicesBarCanvas}></canvas></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="card">
+      <section>
+        <div class="chart-title">Top 10 Users</div>
+        <div class="chart-wrapper tall"><canvas bind:this={topUsersCanvas}></canvas></div>
+        {#if stats.total > 0 && stats.avgUsage > 0}
+          <ChartTakeaway>
+            Average activity is {stats.avgUsage.toLocaleString()} actions per user — power users in this
+            chart drive a disproportionate share of total usage.
+          </ChartTakeaway>
+        {/if}
+      </section>
+    </div>
+    <div class="card">
+      <section>
+        <div class="chart-title">Usage vs Active Days</div>
+        <div class="chart-wrapper tall"><canvas bind:this={scatterCanvas}></canvas></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- User table -->
+  <div class="card">
+    <header>
+      <h2>User Data ({filtered.length} users)</h2>
+      <button class="btn" onclick={() => downloadCSV(sortedFiltered, 'sas-usage-analytics.csv')}>
+        Export CSV
+      </button>
+    </header>
+    <section>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Email</th>
+              <th>License</th>
+              <th>Priority</th>
+              <th>Active Days</th>
+              {#each SERVICES as s}<th>{s}</th>{/each}
+            </tr>
+          </thead>
+          <tbody>
+            {#each sortedFiltered as u, i}
+              {@const isUntracked = data.usage.untrackedUsers.users.some(
+                (x) => x.email.toLowerCase() === u.email.toLowerCase()
+              )}
+              <tr>
+                <td>{i + 1}</td>
+                <td>
+                  <a href="/user?email={encodeURIComponent(u.email)}" class="email-link"
+                    >{u.email}</a
+                  >
+                </td>
+                <td>
+                  <span class={u.hasGeminiPro ? 'badge badge-pro' : 'badge badge-basic'}>
+                    {u.hasGeminiPro ? 'Pro' : 'Basic'}
+                  </span>
+                  {#if isUntracked}
+                    <span class="badge badge-untracked" style="margin-left:4px;">Untracked</span>
+                  {/if}
+                </td>
+                <td>
+                  <span class={priorityBadgeClass(u.overallUsagePriority)}
+                    >{u.overallUsagePriority}</span
+                  >
+                  <span class="usage-value"> ({u.overallUsage.toLocaleString()})</span>
+                </td>
+                <td>{u.activeDays}</td>
+                {#each SERVICES as s}
+                  <td>
+                    <span class={priorityBadgeClass(u.servicesPriority[s])}
+                      >{u.servicesPriority[s]}</span
+                    >
+                    <span class="usage-value"> ({u.services[s].toLocaleString()})</span>
+                  </td>
+                {/each}
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <Modal
+    open={showUntracked}
+    title="Untracked Users ({data.usage.untrackedUsers.count})"
+    onClose={() => (showUntracked = false)}
+  >
+    <table class="table">
+      <thead>
+        <tr><th>#</th><th>Email</th><th>Priority</th><th>Usage</th><th>Days</th></tr>
+      </thead>
+      <tbody>
+        {#each [...data.usage.untrackedUsers.users].sort((a, b) => b.overallUsage - a.overallUsage) as u, i}
+          <tr>
+            <td>{i + 1}</td>
+            <td>{u.email}</td>
+            <td><span class={priorityBadgeClass(u.priority)}>{u.priority}</span></td>
+            <td>{u.overallUsage.toLocaleString()}</td>
+            <td>{u.activeDays}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </Modal>
 {/if}
+
+<style>
+  .operational-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+  }
+</style>

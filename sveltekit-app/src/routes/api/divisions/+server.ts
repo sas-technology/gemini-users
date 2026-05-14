@@ -4,14 +4,13 @@ import { getDivisionData } from '$lib/sheets';
 import type { DivisionData } from '$lib/types';
 
 export async function GET() {
-  try {
-    let data = cacheGet<DivisionData>('divisions');
-    if (!data) {
-      data = await getDivisionData();
-      cacheSet('divisions', data);
-    }
-    return json(data);
-  } catch (err) {
-    throw error(502, err instanceof Error ? err.message : 'Failed to fetch division data');
+  const cached = cacheGet<DivisionData>('divisions');
+  if (cached) return json(cached);
+
+  const result = await getDivisionData();
+  if (result.error || !result.data) {
+    throw error(502, result.error ?? 'Failed to fetch division data');
   }
+  cacheSet('divisions', result.data);
+  return json(result.data);
 }

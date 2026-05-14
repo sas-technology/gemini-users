@@ -2,17 +2,23 @@ import type { PageServerLoad } from './$types';
 import { cacheGet, cacheSet } from '$lib/cache';
 import { getDivisionData } from '$lib/sheets';
 import type { DivisionData } from '$lib/types';
-import { error } from '@sveltejs/kit';
+import { computeDivisionInsights } from '$lib/insights';
 
 export const load: PageServerLoad = async () => {
-  try {
-    let divisions = cacheGet<DivisionData>('divisions');
-    if (!divisions) {
-      divisions = await getDivisionData();
-      cacheSet('divisions', divisions);
-    }
-    return { divisions };
-  } catch (err) {
-    throw error(502, err instanceof Error ? err.message : 'Failed to load division data');
+  const cached = cacheGet<DivisionData>('divisions');
+  if (cached) {
+    return {
+      divisions: cached,
+      error: null,
+      divisionInsights: computeDivisionInsights(cached),
+    };
   }
+
+  const result = await getDivisionData();
+  if (result.data) cacheSet('divisions', result.data);
+  return {
+    divisions: result.data,
+    error: result.error,
+    divisionInsights: computeDivisionInsights(result.data),
+  };
 };
