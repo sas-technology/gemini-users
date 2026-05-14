@@ -4,6 +4,7 @@
   import { SERVICES } from '$lib/types';
   import { Chart } from '$lib/chartSetup';
   import ErrorBanner from '$lib/components/ErrorBanner.svelte';
+  import UserInsightCallout from '$lib/components/UserInsightCallout.svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -157,6 +158,10 @@
         </div>{/if}
     </div>
   </div>
+
+  {#if data.insight}
+    <UserInsightCallout insight={data.insight} />
+  {/if}
 
   <div class="stats-grid">
     <div class="stat-card {(p.overallPriority || 'zero').toLowerCase()}">

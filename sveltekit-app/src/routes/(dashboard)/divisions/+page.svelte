@@ -4,6 +4,7 @@
   import type { Division, DivisionUser, UsagePriority } from '$lib/types';
   import { Chart } from '$lib/chartSetup';
   import ErrorBanner from '$lib/components/ErrorBanner.svelte';
+  import DivisionInsightCard from '$lib/components/DivisionInsightCard.svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -312,6 +313,14 @@
 
   {#if activeTab === 'compare'}
     <!-- Compare view -->
+    {#if data.divisionInsights.length > 0}
+      <div class="division-insights-grid">
+        {#each data.divisionInsights as insight (insight.name)}
+          <DivisionInsightCard {insight} />
+        {/each}
+      </div>
+    {/if}
+
     <div class="stats-grid">
       {#each divNames as name}
         {@const d = data.divisions.divisions[name]}
@@ -430,6 +439,13 @@
     {@const div = data.divisions.divisions[activeDiv]}
     {@const adoptionRate = div.userCount > 0 ? Math.round((div.proCount / div.userCount) * 100) : 0}
     {@const sorted = [...div.users].sort((a, b) => b.activeDays - a.activeDays)}
+    {@const divInsight = data.divisionInsights.find((i) => i.name === activeDiv)}
+
+    {#if divInsight}
+      <div class="single-division-insight">
+        <DivisionInsightCard insight={divInsight} />
+      </div>
+    {/if}
 
     <div class="stats-grid">
       <div class="stat-card {divCssClass(activeDiv)}">
@@ -553,3 +569,15 @@
     <div class="no-data"><h2>Division not found</h2></div>
   {/if}
 {/if}
+
+<style>
+  .division-insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+    margin-bottom: 25px;
+  }
+  .single-division-insight {
+    margin-bottom: 25px;
+  }
+</style>

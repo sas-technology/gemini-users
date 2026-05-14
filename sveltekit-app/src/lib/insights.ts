@@ -4,7 +4,14 @@
 // All insights are SNAPSHOT-based: they describe what the current period
 // shows. Time-series narrative (week-over-week change, trends) requires
 // snapshot history in the spreadsheet, which is a separate effort.
-import type { UsageData, DivisionData, UserData, UsagePriority } from './types';
+import type {
+  UsageData,
+  DivisionData,
+  Division,
+  UserData,
+  UsagePriority,
+  UserProfile,
+} from './types';
 
 // Tunable thresholds. These are the levers product/T&I will want to
 // adjust as the rollout evolves — keep them named, in one place.
@@ -231,4 +238,140 @@ export function computeOperationalLists(usage: UsageData | null): OperationalLis
       users: upgradeCandidates,
     },
   ];
+}
+
+// ─── Per-division insights ────────────────────────────────────────────────
+
+export interface DivisionInsight {
+  name: string;
+  sentences: string[];
+  facts: {
+    userCount: number;
+    proCount: number;
+    proAdoptionPct: number;
+    activeAdoptionPct: number;
+    avgActiveDays: number;
+    inactiveProCount: number;
+    topUserEmail: string | null;
+  };
+}
+
+function divisionAdoptionPct(d: Division): number {
+  const adopters = (d.priorityBreakdown.High ?? 0) + (d.priorityBreakdown.Medium ?? 0);
+  return pct(adopters, d.userCount);
+}
+
+export function computeDivisionInsights(divisions: DivisionData | null): DivisionInsight[] {
+  if (!divisions) return [];
+  return Object.entries(divisions.divisions).map(([name, d]) => {
+    const proAdoptionPct = pct(d.proCount, d.userCount);
+    const activeAdoptionPct = divisionAdoptionPct(d);
+    const inactivePro = d.users.filter(
+      (u) => u.hasGeminiPro && u.activeDays <= THRESHOLDS.inactiveProActiveDaysAtMost
+    );
+    const topUser = d.topUsers[0] ?? null;
+
+    const sentences: string[] = [];
+    if (d.userCount === 0) {
+      sentences.push('No users tracked in this division yet.');
+    } else {
+      sentences.push(
+        `${d.userCount} users tracked, ${d.proCount} on a Pro license (${proAdoptionPct}%).`
+      );
+      sentences.push(
+        `${activeAdoptionPct}% are sustained adopters (High or Medium priority); average ${d.avgActiveDays.toFixed(1)} active days.`
+      );
+      if (inactivePro.length > 0) {
+        sentences.push(
+          `${inactivePro.length} Pro holder${inactivePro.length === 1 ? '' : 's'} had no recorded activity — review for license reclamation.`
+        );
+      }
+      if (topUser) {
+        sentences.push(
+          `Top adopter: ${topUser.name || topUser.email} (${topUser.activeDays} active days${topUser.hasGeminiPro ? ', Pro' : ''}).`
+        );
+      }
+    }
+
+    return {
+      name,
+      sentences,
+      facts: {
+        userCount: d.userCount,
+        proCount: d.proCount,
+        proAdoptionPct,
+        activeAdoptionPct,
+        avgActiveDays: Math.round(d.avgActiveDays * 10) / 10,
+        inactiveProCount: inactivePro.length,
+        topUserEmail: topUser?.email ?? null,
+      },
+    };
+  });
+}
+
+// ─── Per-user insights ────────────────────────────────────────────────────
+
+export interface UserInsight {
+  sentences: string[];
+  facts: {
+    primaryService: { name: string; count: number } | null;
+    activeDaysVsDivisionAvg: 'above' | 'at' | 'below';
+    licenseRecommendation: 'review' | 'upgrade' | 'keep' | 'none';
+  };
+}
+
+export function computeUserInsight(profile: UserProfile | null): UserInsight | null {
+  if (!profile) return null;
+
+  const sentences: string[] = [];
+
+  // Primary service
+  const services = Object.entries(profile.services).filter(([, v]) => v > 0);
+  services.sort((a, b) => b[1] - a[1]);
+  const primary = services[0] ? { name: services[0][0], count: services[0][1] } : null;
+  if (primary) {
+    sentences.push(
+      `${primary.name} is the leading service this period (${primary.count.toLocaleString()} actions).`
+    );
+  } else {
+    sentences.push('No service activity recorded this period.');
+  }
+
+  // Active days vs division
+  let comparison: 'above' | 'at' | 'below' = 'at';
+  if (profile.divisionAvg.userCount > 0) {
+    const delta = profile.activeDays - profile.divisionAvg.activeDays;
+    if (delta > 1) comparison = 'above';
+    else if (delta < -1) comparison = 'below';
+    sentences.push(
+      `${profile.activeDays} active days vs. division average ${profile.divisionAvg.activeDays.toFixed(1)} (${comparison} division).`
+    );
+  }
+
+  // License recommendation
+  let recommendation: UserInsight['facts']['licenseRecommendation'] = 'none';
+  if (profile.hasGeminiPro && profile.activeDays === 0) {
+    recommendation = 'review';
+    sentences.push('Pro license but no recorded activity — candidate for license review.');
+  } else if (
+    !profile.hasGeminiPro &&
+    profile.overallPriority === THRESHOLDS.upgradeCandidatePriority
+  ) {
+    recommendation = 'upgrade';
+    sentences.push('Basic licence but High overall priority — strong upgrade candidate.');
+  } else if (
+    profile.hasGeminiPro &&
+    THRESHOLDS.activePriorities.includes(profile.overallPriority)
+  ) {
+    recommendation = 'keep';
+  }
+
+  return {
+    sentences,
+    facts: {
+      primaryService: primary,
+      activeDaysVsDivisionAvg: comparison,
+      licenseRecommendation: recommendation,
+    },
+  };
 }

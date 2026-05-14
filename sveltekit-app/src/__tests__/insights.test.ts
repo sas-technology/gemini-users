@@ -1,12 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { computeExecutiveSummary, computeOperationalLists } from '../lib/insights';
+import {
+  computeExecutiveSummary,
+  computeOperationalLists,
+  computeDivisionInsights,
+  computeUserInsight,
+} from '../lib/insights';
 import type {
   UsageData,
   DivisionData,
   UserData,
+  UserProfile,
   ServiceCounts,
   ServicePriorities,
   UsagePriority,
+  Division,
+  DivisionUser,
 } from '../lib/types';
 
 const ZERO_SERVICES: ServiceCounts = {
@@ -132,6 +140,136 @@ describe('computeExecutiveSummary', () => {
     const usage = usageOf([user()]);
     const result = computeExecutiveSummary(usage, null, null);
     expect(result.sentences.some((s) => s.includes('students have Gemini access'))).toBe(false);
+  });
+});
+
+function divisionUser(overrides: Partial<DivisionUser> = {}): DivisionUser {
+  return {
+    email: 'd@example.com',
+    name: 'Dee',
+    jobTitle: 'Teacher',
+    hasGeminiPro: false,
+    priority: 'Zero',
+    activeDays: 0,
+    ...overrides,
+  };
+}
+
+function division(overrides: Partial<Division> = {}): Division {
+  return {
+    userCount: 10,
+    proCount: 4,
+    totalActiveDays: 50,
+    avgActiveDays: 5,
+    priorityBreakdown: { High: 2, Medium: 3, Low: 2, Zero: 3 },
+    users: [],
+    topUsers: [],
+    ...overrides,
+  };
+}
+
+describe('computeDivisionInsights', () => {
+  it('returns an empty array when there are no divisions', () => {
+    expect(computeDivisionInsights(null)).toEqual([]);
+  });
+
+  it('describes adoption, average days, and Pro review candidates per division', () => {
+    const result = computeDivisionInsights({
+      divisions: {
+        'High School': division({
+          userCount: 10,
+          proCount: 6,
+          avgActiveDays: 7.5,
+          priorityBreakdown: { High: 5, Medium: 3, Low: 1, Zero: 1 },
+          users: [
+            divisionUser({ email: 'p1@x', hasGeminiPro: true, activeDays: 0 }),
+            divisionUser({ email: 'p2@x', hasGeminiPro: true, activeDays: 12 }),
+          ],
+          topUsers: [divisionUser({ email: 'p2@x', hasGeminiPro: true, activeDays: 12 })],
+        }),
+      },
+    });
+    expect(result).toHaveLength(1);
+    const hs = result[0];
+    expect(hs.facts.proAdoptionPct).toBe(60);
+    expect(hs.facts.activeAdoptionPct).toBe(80);
+    expect(hs.facts.inactiveProCount).toBe(1);
+    expect(hs.facts.topUserEmail).toBe('p2@x');
+    expect(hs.sentences.some((s) => s.includes('1 Pro holder had no recorded activity'))).toBe(
+      true
+    );
+    expect(hs.sentences.some((s) => s.includes('Top adopter'))).toBe(true);
+  });
+
+  it('handles an empty division gracefully', () => {
+    const result = computeDivisionInsights({
+      divisions: {
+        Empty: division({
+          userCount: 0,
+          proCount: 0,
+          avgActiveDays: 0,
+          priorityBreakdown: { High: 0, Medium: 0, Low: 0, Zero: 0 },
+          users: [],
+          topUsers: [],
+        }),
+      },
+    });
+    expect(result[0].sentences[0]).toBe('No users tracked in this division yet.');
+  });
+});
+
+function profile(overrides: Partial<UserProfile> = {}): UserProfile {
+  return {
+    email: 'u@example.com',
+    name: 'User',
+    division: 'High School',
+    jobTitle: 'Teacher',
+    personId: '1',
+    hasGeminiPro: false,
+    overallUsage: 0,
+    overallPriority: 'Zero',
+    activeDays: 0,
+    services: { ...ZERO_SERVICES },
+    servicesPriority: { ...ZERO_SERVICE_PRIORITIES },
+    divisionAvg: { activeDays: 0, userCount: 0 },
+    ...overrides,
+  };
+}
+
+describe('computeUserInsight', () => {
+  it('returns null for a missing profile', () => {
+    expect(computeUserInsight(null)).toBeNull();
+  });
+
+  it('flags a Pro holder with no activity for license review', () => {
+    const insight = computeUserInsight(
+      profile({ hasGeminiPro: true, activeDays: 0, divisionAvg: { activeDays: 5, userCount: 12 } })
+    );
+    expect(insight?.facts.licenseRecommendation).toBe('review');
+    expect(insight?.sentences.some((s) => s.includes('candidate for license review'))).toBe(true);
+  });
+
+  it('marks Basic + High priority as upgrade candidate', () => {
+    const insight = computeUserInsight(
+      profile({
+        overallPriority: 'High',
+        activeDays: 20,
+        divisionAvg: { activeDays: 8, userCount: 10 },
+      })
+    );
+    expect(insight?.facts.licenseRecommendation).toBe('upgrade');
+    expect(insight?.facts.activeDaysVsDivisionAvg).toBe('above');
+  });
+
+  it('identifies the leading service', () => {
+    const insight = computeUserInsight(
+      profile({
+        services: { ...ZERO_SERVICES, Gemini: 100, Docs: 50 },
+        divisionAvg: { activeDays: 5, userCount: 10 },
+      })
+    );
+    expect(insight?.facts.primaryService?.name).toBe('Gemini');
+    expect(insight?.facts.primaryService?.count).toBe(100);
   });
 });
 
