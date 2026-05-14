@@ -8,6 +8,7 @@
   import ChartTakeaway from '$lib/components/ChartTakeaway.svelte';
   import OperationalList from '$lib/components/OperationalList.svelte';
   import ErrorBanner from '$lib/components/ErrorBanner.svelte';
+  import Modal from '$lib/components/Modal.svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -703,48 +704,28 @@
     </section>
   </div>
 
-  <!-- Untracked modal -->
-  {#if showUntracked}
-    <div
-      style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:center;justify-content:center;"
-      role="presentation"
-      tabindex="-1"
-      onclick={() => (showUntracked = false)}
-      onkeydown={(e) => e.key === 'Escape' && (showUntracked = false)}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        tabindex="-1"
-        style="background:white;border-radius:12px;padding:30px;max-width:600px;width:90%;max-height:80vh;overflow:auto;"
-        onclick={(e) => e.stopPropagation()}
-        onkeydown={(e) => e.stopPropagation()}
-      >
-        <h2 style="margin-bottom:16px;color:#1a2d58;">
-          Untracked Users ({data.usage.untrackedUsers.count})
-        </h2>
-        <table class="table">
-          <thead
-            ><tr><th>#</th><th>Email</th><th>Priority</th><th>Usage</th><th>Days</th></tr></thead
-          >
-          <tbody>
-            {#each [...data.usage.untrackedUsers.users].sort((a, b) => b.overallUsage - a.overallUsage) as u, i}
-              <tr>
-                <td>{i + 1}</td>
-                <td>{u.email}</td>
-                <td><span class={priorityBadgeClass(u.priority)}>{u.priority}</span></td>
-                <td>{u.overallUsage.toLocaleString()}</td>
-                <td>{u.activeDays}</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-        <button class="btn" style="margin-top:16px;" onclick={() => (showUntracked = false)}
-          >Close</button
-        >
-      </div>
-    </div>
-  {/if}
+  <Modal
+    open={showUntracked}
+    title="Untracked Users ({data.usage.untrackedUsers.count})"
+    onClose={() => (showUntracked = false)}
+  >
+    <table class="table">
+      <thead>
+        <tr><th>#</th><th>Email</th><th>Priority</th><th>Usage</th><th>Days</th></tr>
+      </thead>
+      <tbody>
+        {#each [...data.usage.untrackedUsers.users].sort((a, b) => b.overallUsage - a.overallUsage) as u, i}
+          <tr>
+            <td>{i + 1}</td>
+            <td>{u.email}</td>
+            <td><span class={priorityBadgeClass(u.priority)}>{u.priority}</span></td>
+            <td>{u.overallUsage.toLocaleString()}</td>
+            <td>{u.activeDays}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </Modal>
 {/if}
 
 <style>
