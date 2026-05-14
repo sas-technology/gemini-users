@@ -173,9 +173,7 @@ export function computeExecutiveSummary(
       geminiSharePct: geminiShare,
       secondService: second ? { name: second[0], sharePct: pct(second[1], totalServiceUse) } : null,
       staffCoveragePct:
-        staffUsers.length > 0
-          ? pct(staffUsers.length - silentStaff.length, staffUsers.length)
-          : 0,
+        staffUsers.length > 0 ? pct(staffUsers.length - silentStaff.length, staffUsers.length) : 0,
       silentStaffCount: silentStaff.length,
       studentsWithAccess: students?.withAccess ?? 0,
       studentsWithoutAccess: students?.withoutAccess ?? 0,
@@ -199,15 +197,12 @@ export function computeOperationalLists(usage: UsageData | null): OperationalLis
   const limit = THRESHOLDS.operationalListLimit;
 
   const inactivePro = usage.users
-    .filter(
-      (u) => u.hasGeminiPro && u.activeDays <= THRESHOLDS.inactiveProActiveDaysAtMost
-    )
+    .filter((u) => u.hasGeminiPro && u.activeDays <= THRESHOLDS.inactiveProActiveDaysAtMost)
     .map((u) => ({ email: u.email, meta: `Pro · ${u.activeDays} active days` }));
 
   const upgradeCandidates = usage.users
     .filter(
-      (u) =>
-        !u.hasGeminiPro && u.overallUsagePriority === THRESHOLDS.upgradeCandidatePriority
+      (u) => !u.hasGeminiPro && u.overallUsagePriority === THRESHOLDS.upgradeCandidatePriority
     )
     .sort((a, b) => b.overallUsage - a.overallUsage)
     .slice(0, limit)

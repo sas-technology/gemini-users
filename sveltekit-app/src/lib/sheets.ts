@@ -38,7 +38,9 @@ async function apsFetch<T>(
       headers: { Accept: 'application/json' },
     });
   } catch (err) {
-    return fail(`Network error reaching Apps Script: ${err instanceof Error ? err.message : String(err)}`);
+    return fail(
+      `Network error reaching Apps Script: ${err instanceof Error ? err.message : String(err)}`
+    );
   }
 
   if (!res.ok) return fail(`Apps Script returned ${res.status}`);
@@ -47,7 +49,9 @@ async function apsFetch<T>(
   try {
     body = (await res.json()) as T & { error?: string };
   } catch (err) {
-    return fail(`Apps Script returned non-JSON: ${err instanceof Error ? err.message : String(err)}`);
+    return fail(
+      `Apps Script returned non-JSON: ${err instanceof Error ? err.message : String(err)}`
+    );
   }
   if (body.error) return fail(body.error);
   return ok(body);
