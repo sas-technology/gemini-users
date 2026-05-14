@@ -1,10 +1,12 @@
 /**
  * Web App entry point — serves two roles:
  *
- * 1. JSON data API for the Next.js dashboard (when ?format=json&key=KEY&endpoint=...)
- * 2. Fallback read-only HTML dashboard (when Next.js is unavailable)
+ * 1. JSON data API for the SvelteKit dashboard (when ?format=json&key=KEY&endpoint=...)
+ * 2. Fallback read-only HTML dashboard (when SvelteKit is unavailable)
  *
- * Deploy as: Web App → Execute as "Me" → Access "Anyone with Google Account"
+ * Deploy as: Web App → Execute as "Me" → Access "Anyone"
+ * (Anonymous access is required because the SvelteKit server has no Google
+ *  credentials. Auth is enforced by the API_KEY check below.)
  *
  * API key: Apps Script editor → Project Settings → Script Properties → API_KEY = <secret>
  * (Same value goes in the Next.js .env as APPS_SCRIPT_API_KEY)
@@ -61,7 +63,7 @@ function doGet(e) {
   }
 
   return HtmlService.createHtmlOutputFromFile('Fallback')
-    .setTitle('SAS Usage Analytics — Fallback')
+    .setTitle('Gemini Usage Tracker — Fallback')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
 }

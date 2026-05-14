@@ -2,17 +2,7 @@
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
   import { SERVICES } from '$lib/types';
-  import {
-    Chart,
-    ArcElement,
-    Tooltip,
-    Legend,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-  } from 'chart.js';
-
-  Chart.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
+  import { Chart } from '$lib/chartSetup';
 
   let { data }: { data: PageData } = $props();
 
@@ -124,7 +114,7 @@
 
 <svelte:head>
   <title
-    >{data.profile ? data.profile.name || data.profile.email : 'User Profile'} — SAS Analytics</title
+    >{data.profile ? data.profile.name || data.profile.email : 'User Profile'} — Gemini Usage Tracker</title
   >
 </svelte:head>
 

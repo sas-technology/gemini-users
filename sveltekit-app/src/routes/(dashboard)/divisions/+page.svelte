@@ -2,18 +2,7 @@
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
   import type { Division, DivisionUser, UsagePriority } from '$lib/types';
-  import {
-    Chart,
-    ArcElement,
-    Tooltip,
-    Legend,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-  } from 'chart.js';
-
-  Chart.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
+  import { Chart } from '$lib/chartSetup';
 
   let { data }: { data: PageData } = $props();
 
@@ -283,7 +272,7 @@
   });
 </script>
 
-<svelte:head><title>Divisions — SAS Analytics</title></svelte:head>
+<svelte:head><title>Divisions — Gemini Usage Tracker</title></svelte:head>
 
 <h1 class="page-title">Division Analytics</h1>
 

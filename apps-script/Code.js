@@ -38,7 +38,7 @@
  * staff_list → pro_user_list (Name, Division, Job Title, Person ID)
  * usage_counts + usage_by_priority → pro_user_list (Usage labels, Active Days)
  *
- * Author: Singapore American School IT Department
+ * Author: SAS Technology & Innovation
  * Last Updated: 2025
  */
 
@@ -144,7 +144,7 @@ function isAdmin(email) {
  * Purpose: Sets up the user interface and ensures data is current
  *
  * Actions Performed:
- * 1. Creates custom "Custom Utilities" menu in the spreadsheet toolbar
+ * 1. Creates custom "Gemini Tracker" menu in the spreadsheet toolbar
  * 2. Automatically syncs all data to ensure freshness when user opens spreadsheet
  *
  * Menu Items:
@@ -163,7 +163,7 @@ function isAdmin(email) {
  */
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu('Custom Utilities')
+    .createMenu('Gemini Tracker')
     .addItem('🔄 Run Full Sync', 'showProgressDialog')
     .addSeparator()
     .addItem('Process Pro User List (Renumber & Highlight)', 'highlightDuplicateEmailsAndRenumber')

@@ -1,4 +1,4 @@
-# Contributing to SAS Gemini Tracker
+# Contributing to Gemini Usage Tracker
 
 ## Before you start
 
@@ -58,7 +58,7 @@ Use the PR template. Fill in every section — incomplete PRs will be sent back.
 
 ## Apps Script changes
 
-After editing `Code.js`, `WebApp.js`, `Progress.html`, or `Fallback.html`:
+After editing files under `apps-script/` (`Code.js`, `WebApp.js`, `Progress.html`, or `Fallback.html`):
 
 ```bash
 clasp push

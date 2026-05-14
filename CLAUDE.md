@@ -4,20 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Google Workspace Apps Script project that manages and tracks Gemini AI usage across Singapore American School (SAS). It syncs staff/student data across multiple Google Sheets tabs and exposes a JSON API consumed by a self-hosted SvelteKit dashboard.
+**Gemini Usage Tracker** — owned by SAS Technology & Innovation at Singapore American School (SAS). A Google Workspace Apps Script project that manages and tracks Gemini AI usage. It syncs staff/student data across multiple Google Sheets tabs and exposes a JSON API consumed by a self-hosted SvelteKit dashboard.
 
 ## Repository Structure
 
 ```text
-/                         # Root — Apps Script source + dev tooling
-├── Code.js               # Sheet processing, sync logic, menu
-├── WebApp.js             # JSON API + fallback HTML dashboard
-├── Progress.html         # Modal shown while sync scripts run
-├── Fallback.html         # Emergency read-only dashboard (if SvelteKit is down)
-├── appsscript.json       # Apps Script runtime config
+/                         # Root — dev tooling, install script, docs
+├── apps-script/          # Google Apps Script source (clasp rootDir)
+│   ├── Code.js           # Sheet processing, sync logic, menu
+│   ├── WebApp.js         # JSON API + fallback HTML dashboard
+│   ├── Progress.html     # Modal shown while sync scripts run
+│   ├── Fallback.html     # Emergency read-only dashboard (if SvelteKit is down)
+│   └── appsscript.json   # Apps Script runtime config
 ├── install.sh            # One-command setup script
 └── sveltekit-app/        # Self-hosted analytics dashboard (SvelteKit 2 + Svelte 5)
 ```
+
+`.clasp.json` sets `rootDir: "apps-script"`, so `clasp push` / `clasp pull` operate inside that directory only.
 
 ## Apps Script Development
 
